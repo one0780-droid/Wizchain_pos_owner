@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CryptoPOS — 점주 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3a;
+    --accent: #00c98a;
+    --accent2: #7c3aff;
+    --warn: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #666680;
+    --gold: #ffd700;
+    --input-bg: #0a0a0f;
+    --select-bg: #13131a;
+  }
+  :root.light {
+    --bg: #f4f4f8;
+    --surface: #ffffff;
+    --surface2: #eeeef5;
+    --border: #d8d8e8;
+    --accent: #00a870;
+    --accent2: #6d28d9;
+    --warn: #e85d20;
+    --text: #1a1a2e;
+    --muted: #8888a8;
+    --gold: #c47d00;
+    --input-bg: #ffffff;
+    --select-bg: #ffffff;
+  }
+
+  /* THEME TOGGLE */
+  .theme-toggle {
+    width: 42px; height: 24px;
+    border-radius: 12px;
+    border: none; cursor: pointer; padding: 0;
+    position: relative;
+    background: var(--border);
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .theme-toggle.dark { background: #2a2a3a; }
+  .theme-toggle.light { background: #c8e6d4; }
+  .theme-toggle-knob {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; line-height: 1;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  :root.light .theme-toggle-knob { transform: translateX(18px); background: #fff; }
+  .theme-label {
+    font-size: 11px; color: var(--muted);
+    white-space: nowrap;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(0,229,160,0.4);
+  }
+  .logo span { color: var(--muted); font-size: 13px; font-family: 'Noto Sans KR', sans-serif; letter-spacing: 0; margin-left: 8px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .store-badge {
+    background: linear-gradient(135deg, var(--accent2), #5b21b6);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .chain-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-item {
+    background: var(--surface);
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+  .stat-value.green { color: var(--accent); }
+  .stat-value.purple { color: var(--accent2); }
+  .stat-value.orange { color: var(--warn); }
+  .stat-value.gold { color: var(--gold); }
+  .stat-sub { font-size: 11px; color: var(--muted); }
+
+  /* MAIN LAYOUT */
+  .main { display: grid; grid-template-columns: 1fr 380px; min-height: calc(100vh - 120px); }
+
+  /* LEFT PANEL */
+  .left-panel { padding: 24px; border-right: 1px solid var(--border); }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+  .tab {
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+  .tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  /* ADD MENU FORM */
+  .add-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: none;
+  }
+  .add-form.open { display: block; animation: slideDown 0.3s ease; }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-10px);} to{opacity:1;transform:translateY(0);} }
+  .form-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1/-1; }
+  label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--surface); }
+  textarea { resize: none; height: 72px; }
+
+  .reward-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  input[type=range] {
+    flex: 1;
+    padding: 0;
+    height: 4px;
+    accent-color: var(--accent);
+    background: var(--border);
+    cursor: pointer;
+  }
+  .reward-badge {
+    background: linear-gradient(135deg, var(--accent), #00b37e);
+    color: #000;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  .form-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { background: #00c98a; transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+  .btn-danger {
+    background: transparent;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+  .btn-danger:hover { background: #ff4444; color: #fff; }
+  .btn-open {
+    background: linear-gradient(135deg, var(--accent), #00b37e);
+    color: #000;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-open:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,229,160,0.3); }
+
+  /* MENU GRID */
+  .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .menu-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .menu-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .menu-card.soldout { opacity: 0.5; }
+  .menu-thumb {
+    width: 100%;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    background: var(--surface2);
+  }
+  .menu-info { padding: 12px; }
+  .menu-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .menu-cat { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .menu-price-row { display: flex; align-items: center; justify-content: space-between; }
+  .menu-price { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--accent); }
+  .menu-reward {
+    background: rgba(124,58,255,0.2);
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .menu-actions { padding: 8px 12px; display: flex; gap: 6px; border-top: 1px solid var(--border); }
+  .soldout-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: var(--warn);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .toggle-btn {
+    flex: 1;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .toggle-btn:hover { border-color: var(--warn); color: var(--warn); }
+  .toggle-btn.active { border-color: var(--accent); color: var(--accent); }
+
+  /* RIGHT PANEL — ORDERS */
+  .right-panel { background: var(--surface); display: flex; flex-direction: column; }
+  .right-header {
+    padding: 20px 20px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    flex-shrink: 0;
+  }
+  .right-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .order-filter { display: flex; gap: 6px; }
+  .filter-btn {
+    padding: 4px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn.active { background: var(--warn); border-color: var(--warn); color: #fff; }
+
+  .orders-list { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .orders-list::-webkit-scrollbar { width: 4px; }
+  .orders-list::-webkit-scrollbar-track { background: transparent; }
+  .orders-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .order-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateX(10px);} to{opacity:1;transform:translateX(0);} }
+  .order-card.new-order { border-color: var(--accent); box-shadow: 0 0 12px rgba(0,229,160,0.15); }
+  .order-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .order-id { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; }
+  .order-time { font-size: 11px; color: var(--muted); }
+  .order-items { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .order-item-row { display: flex; justify-content: space-between; font-size: 13px; }
+  .order-item-name { color: var(--text); }
+  .order-item-qty { color: var(--muted); }
+  .order-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .order-total { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--gold); }
+  .order-token { font-size: 11px; color: var(--accent2); }
+  .order-status {
+    padding: 4px 12px;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-new { background: rgba(0,229,160,0.2); color: var(--accent); border: 1px solid var(--accent); }
+  .status-making { background: rgba(255,107,53,0.2); color: var(--warn); border: 1px solid var(--warn); }
+  .status-done { background: rgba(102,102,128,0.2); color: var(--muted); border: 1px solid var(--border); }
+  .order-actions { margin-top: 10px; display: flex; gap: 6px; }
+  .btn-confirm {
+    flex: 1;
+    padding: 7px;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent);
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-confirm:hover { background: #00c98a; }
+  .btn-ready {
+    flex: 1;
+    padding: 7px;
+    border-radius: 6px;
+    border: none;
+    background: var(--warn);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  /* CHAIN LOG */
+  .chain-log {
+    border-top: 1px solid var(--border);
+    padding: 14px 20px;
+    flex-shrink: 0;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .chain-log-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .chain-entry {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    margin-bottom: 6px;
+    animation: fadeIn 0.3s ease;
+  }
+  .chain-hash { color: var(--accent); font-family: monospace; }
+  .chain-desc { color: var(--muted); }
+  .chain-time { color: var(--border); margin-left: auto; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 14px;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0,229,160,0.2);
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 40px; color: var(--muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  @media(max-width:900px) {
+    .main { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(2,1fr); }
+    .right-panel { border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">CryptoPOS <span>점주 관리 콘솔</span></div>
+  <div class="header-right">
+    <div class="chain-dot"></div>
+    <span class="theme-label" id="themeLabel">🌙</span>
+    <button class="theme-toggle dark" id="themeToggle" onclick="toggleTheme()" title="다크/라이트 모드 전환">
+      <div class="theme-toggle-knob">🌙</div>
+    </button>
+    <div class="store-badge">☕ 위즈카페 강남점</div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-label">오늘 매출</div>
+    <div class="stat-value green" id="stat-sales">₩ 0</div>
+    <div class="stat-sub">토큰 결제 포함</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">주문 건수</div>
+    <div class="stat-value purple" id="stat-orders">0</div>
+    <div class="stat-sub">오늘 누적</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">지급 토큰</div>
+    <div class="stat-value gold" id="stat-tokens">0</div>
+    <div class="stat-sub">WIZ 토큰</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">메뉴 수</div>
+    <div class="stat-value orange" id="stat-menus">0</div>
+    <div class="stat-sub">판매 중</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="left-panel">
+    <div class="section-header">
+      <div>
+        <div class="section-title">메뉴 관리</div>
+      </div>
+      <button class="btn-open" onclick="toggleForm()">+ 메뉴 추가</button>
+    </div>
+
+    <!-- ADD FORM -->
+    <div class="add-form" id="addForm">
+      <div class="form-title">✦ 신규 메뉴 등록</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>메뉴 이름</label>
+          <input type="text" id="inp-name" placeholder="아메리카노">
+        </div>
+        <div class="form-group">
+          <label>카테고리</label>
+          <select id="inp-cat">
+            <option value="☕ 커피">☕ 커피</option>
+            <option value="🍵 논커피">🍵 논커피</option>
+            <option value="🥤 스무디">🥤 스무디</option>
+            <option value="🍰 디저트">🍰 디저트</option>
+            <option value="🥪 푸드">🥪 푸드</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>가격 (원)</label>
+          <input type="number" id="inp-price" placeholder="4500" min="0">
+        </div>
+        <div class="form-group">
+          <label>아이콘 이모지</label>
+          <input type="text" id="inp-emoji" placeholder="☕" maxlength="4">
+        </div>
+        <div class="form-group full">
+          <label>메뉴 설명</label>
+          <textarea id="inp-desc" placeholder="진한 에스프레소와 물의 조화..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label>토큰 리워드 배율</label>
+          <div class="reward-slider-row">
+            <input type="range" id="inp-reward" min="1" max="3" step="0.5" value="1" oninput="updateReward(this.value)">
+            <div class="reward-badge" id="reward-display">1x</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addMenu()">🔗 체인에 등록</button>
+        <button class="btn btn-secondary" onclick="toggleForm()">취소</button>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="filterMenus('all', this)">전체</button>
+      <button class="tab" onclick="filterMenus('☕ 커피', this)">☕ 커피</button>
+      <button class="tab" onclick="filterMenus('🍵 논커피', this)">🍵 논커피</button>
+      <button class="tab" onclick="filterMenus('🍰 디저트', this)">🍰 디저트</button>
+      <button class="tab" onclick="filterMenus('🥤 스무디', this)">🥤 스무디</button>
+    </div>
+
+    <!-- MENU GRID -->
+    <div class="menu-grid" id="menuGrid"></div>
+  </div>
+
+  <div class="right-panel">
+    <div class="right-header">
+      <div class="right-title">📋 주문 현황</div>
+      <div class="order-filter">
+        <button class="filter-btn active" onclick="filterOrders('all',this)">전체</button>
+        <button class="filter-btn" onclick="filterOrders('new',this)">신규</button>
+        <button class="filter-btn" onclick="filterOrders('making',this)">제조중</button>
+        <button class="filter-btn" onclick="filterOrders('done',this)">완료</button>
+      </div>
+    </div>
+    <div class="orders-list" id="ordersList">
+      <div class="empty"><div class="empty-icon">📭</div>주문이 없습니다<br><small>고객 앱에서 주문하면 실시간으로 표시됩니다</small></div>
+    </div>
+    <div class="chain-log">
+      <div class="chain-log-title">⛓ Wizchain 트랜잭션 로그</div>
+      <div id="chainLog"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== SHARED STATE via localStorage =====
+const MENU_KEY = 'cryptopos_menus';
+const ORDER_KEY = 'cryptopos_orders';
+
+let menus = JSON.parse(localStorage.getItem(MENU_KEY) || '[]');
+let orders = JSON.parse(localStorage.getItem(ORDER_KEY) || '[]');
+let currentFilter = 'all';
+let orderFilter = 'all';
+let formOpen = false;
+let chainLogEntries = [];
+
+// Default menus if empty
+if (menus.length === 0) {
+  menus = [
+    { id: 1, name: '아메리카노', cat: '☕ 커피', price: 4500, emoji: '☕', reward: 1, soldout: false, desc: '진한 에스프레소와 차가운 물의 완벽한 조화' },
+    { id: 2, name: '카페라떼', cat: '☕ 커피', price: 5000, emoji: '🥛', reward: 1.5, soldout: false, desc: '부드러운 우유와 에스프레소의 클래식한 조합' },
+    { id: 3, name: '바닐라라떼', cat: '☕ 커피', price: 5500, emoji: '🍶', reward: 2, soldout: false, desc: '달콤한 바닐라 시럽이 더해진 라떼' },
+    { id: 4, name: '녹차라떼', cat: '🍵 논커피', price: 5500, emoji: '🍵', reward: 1, soldout: false, desc: '제주산 녹차 파우더로 만든 진한 라떼' },
+    { id: 5, name: '딸기스무디', cat: '🥤 스무디', price: 6500, emoji: '🍓', reward: 2, soldout: false, desc: '신선한 딸기를 갈아 만든 상큼한 스무디' },
+    { id: 6, name: '치즈케이크', cat: '🍰 디저트', price: 7000, emoji: '🍰', reward: 3, soldout: false, desc: '뉴욕 스타일 진한 치즈케이크' },
+  ];
+  saveMenus();
+}
+
+function saveMenus() {
+  localStorage.setItem(MENU_KEY, JSON.stringify(menus));
+  updateStats();
+}
+function saveOrders() {
+  localStorage.setItem(ORDER_KEY, JSON.stringify(orders));
+  updateStats();
+}
+
+// ===== FORM =====
+function toggleForm() {
+  formOpen = !formOpen;
+  document.getElementById('addForm').classList.toggle('open', formOpen);
+}
+
+function updateReward(v) {
+  document.getElementById('reward-display').textContent = v + 'x';
+}
+
+function addMenu() {
+  const name = document.getElementById('inp-name').value.trim();
+  const cat = document.getElementById('inp-cat').value;
+  const price = parseInt(document.getElementById('inp-price').value);
+  const emoji = document.getElementById('inp-emoji').value.trim() || '🍽';
+  const desc = document.getElementById('inp-desc').value.trim();
+  const reward = parseFloat(document.getElementById('inp-reward').value);
+
+  if (!name || !price) { showToast('⚠️ 이름과 가격을 입력하세요'); return; }
+
+  const newMenu = { id: Date.now(), name, cat, price, emoji, reward, soldout: false, desc };
+  menus.push(newMenu);
+  saveMenus();
+  renderMenus();
+  addChainLog(`메뉴 등록: ${name} (${price.toLocaleString()}원)`);
+  showToast(`✅ "${name}" 메뉴가 체인에 등록되었습니다!`);
+
+  // reset
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-price').value = '';
+  document.getElementById('inp-emoji').value = '';
+  document.getElementById('inp-desc').value = '';
+  document.getElementById('inp-reward').value = 1;
+  document.getElementById('reward-display').textContent = '1x';
+  toggleForm();
+}
+
+function deleteMenu(id) {
+  const m = menus.find(x => x.id === id);
+  menus = menus.filter(x => x.id !== id);
+  saveMenus();
+  renderMenus();
+  addChainLog(`메뉴 삭제: ${m.name}`);
+  showToast(`🗑 "${m.name}" 메뉴가 삭제되었습니다`);
+}
+
+function toggleSoldout(id) {
+  const m = menus.find(x => x.id === id);
+  m.soldout = !m.soldout;
+  saveMenus();
+  renderMenus();
+  addChainLog(m.soldout ? `품절 처리: ${m.name}` : `판매재개: ${m.name}`);
+  showToast(m.soldout ? `⛔ "${m.name}" 품절 처리` : `✅ "${m.name}" 판매 재개`);
+}
+
+// ===== RENDER MENUS =====
+function filterMenus(cat, btn) {
+  currentFilter = cat;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderMenus();
+}
+
+function renderMenus() {
+  const grid = document.getElementById('menuGrid');
+  const filtered = currentFilter === 'all' ? menus : menus.filter(m => m.cat === currentFilter);
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div>메뉴가 없습니다</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(m => `
+    <div class="menu-card ${m.soldout ? 'soldout' : ''}">
+      ${m.soldout ? '<div class="soldout-badge">품절</div>' : ''}
+      <div class="menu-thumb">${m.emoji}</div>
+      <div class="menu-info">
+        <div class="menu-name">${m.name}</div>
+        <div class="menu-cat">${m.cat}</div>
+        <div class="menu-price-row">
+          <div class="menu-price">₩ ${m.price.toLocaleString()}</div>
+          <div class="menu-reward">${m.reward}x</div>
+        </div>
+      </div>
+      <div class="menu-actions">
+        <button class="toggle-btn ${m.soldout ? '' : 'active'}" onclick="toggleSoldout(${m.id})">${m.soldout ? '재개' : '품절'}</button>
+        <button class="btn btn-danger" onclick="deleteMenu(${m.id})">삭제</button>
+      </div>
+    </div>
+  `).join('');
+  updateStats();
+}
+
+// ===== ORDERS =====
+function filterOrders(status, btn) {
+  orderFilter = status;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOrders();
+}
+
+function confirmOrder(id) {
+  const o = orders.find(x => x.id === id);
+  o.status = 'making';
+  saveOrders();
+  renderOrders();
+  addChainLog(`주문 확인: #${String(id).slice(-4)}`);
+}
+
+function readyOrder(id) {
+  const o = orders.find(x => x.id === id);
+  o.status = 'done';
+  saveOrders();
+  renderOrders();
+  addChainLog(`제조 완료: #${String(id).slice(-4)} — ${o.total.toLocaleString()}원`);
+  showToast(`🎉 주문 #${String(id).slice(-4)} 완료!`);
+}
+
+function renderOrders() {
+  const list = document.getElementById('ordersList');
+  const filtered = orderFilter === 'all' ? orders : orders.filter(o => o.status === orderFilter);
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>주문이 없습니다</div>';
+    return;
+  }
+  const sorted = [...filtered].reverse();
+  list.innerHTML = sorted.map(o => `
+    <div class="order-card ${o.status === 'new' ? 'new-order' : ''}">
+      <div class="order-top">
+        <div class="order-id"># ${String(o.id).slice(-4)}</div>
+        <div class="order-time">${o.time}</div>
+      </div>
+      <div class="order-items">
+        ${o.items.map(it => `<div class="order-item-row"><span class="order-item-name">${it.emoji} ${it.name}</span><span class="order-item-qty">×${it.qty}</span></div>`).join('')}
+      </div>
+      <div class="order-bottom">
+        <div>
+          <div class="order-total">₩ ${o.total.toLocaleString()}</div>
+          <div class="order-token">+${o.tokens} WIZ 지급</div>
+        </div>
+        <div class="order-status status-${o.status}">${o.status === 'new' ? '신규 주문' : o.status === 'making' ? '제조중' : '완료'}</div>
+      </div>
+      ${o.status === 'new' ? `<div class="order-actions"><button class="btn-confirm" onclick="confirmOrder(${o.id})">✅ 접수 확인</button></div>` : ''}
+      ${o.status === 'making' ? `<div class="order-actions"><button class="btn-ready" onclick="readyOrder(${o.id})">🔔 제조 완료</button></div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ===== CHAIN LOG =====
+function addChainLog(desc) {
+  const hash = '0x' + Math.random().toString(16).slice(2,8).toUpperCase();
+  const now = new Date();
+  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  chainLogEntries.unshift({ hash, desc, time });
+  if (chainLogEntries.length > 10) chainLogEntries.pop();
+  const log = document.getElementById('chainLog');
+  log.innerHTML = chainLogEntries.map(e => `
+    <div class="chain-entry">
+      <span class="chain-hash">${e.hash}</span>
+      <span class="chain-desc">${e.desc}</span>
+      <span class="chain-time">${e.time}</span>
+    </div>
+  `).join('');
+}
+
+// ===== STATS =====
+function updateStats() {
+  const activeMenus = menus.filter(m => !m.soldout).length;
+  const todayOrders = orders.length;
+  const totalSales = orders.reduce((s, o) => s + o.total, 0);
+  const totalTokens = orders.reduce((s, o) => s + o.tokens, 0);
+  document.getElementById('stat-menus').textContent = activeMenus;
+  document.getElementById('stat-orders').textContent = todayOrders;
+  document.getElementById('stat-sales').textContent = '₩ ' + totalSales.toLocaleString();
+  document.getElementById('stat-tokens').textContent = totalTokens.toFixed(1);
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===== LISTEN for new orders =====
+window.addEventListener('storage', (e) => {
+  if (e.key === ORDER_KEY) {
+    orders = JSON.parse(e.newValue || '[]');
+    renderOrders();
+    updateStats();
+    const newOrder = orders[orders.length - 1];
+    if (newOrder && newOrder.status === 'new') {
+      showToast(`🛎 새 주문! #${String(newOrder.id).slice(-4)} — ₩${newOrder.total.toLocaleString()}`);
+      addChainLog(`결제 수신: #${String(newOrder.id).slice(-4)} — ${newOrder.total.toLocaleString()}원`);
+    }
+  }
+  if (e.key === MENU_KEY) {
+    menus = JSON.parse(e.newValue || '[]');
+    renderMenus();
+  }
+});
+
+// Also poll for same-tab updates
+setInterval(() => {
+  const fresh = JSON.parse(localStorage.getItem(ORDER_KEY) || '[]');
+  if (JSON.stringify(fresh) !== JSON.stringify(orders)) {
+    const prev = orders.length;
+    orders = fresh;
+    renderOrders();
+    updateStats();
+    if (fresh.length > prev) {
+      const newOrder = fresh[fresh.length - 1];
+      showToast(`🛎 새 주문! #${String(newOrder.id).slice(-4)} — ₩${newOrder.total.toLocaleString()}`);
+      addChainLog(`결제 수신: #${String(newOrder.id).slice(-4)} — ${newOrder.total.toLocaleString()}원`);
+    }
+  }
+}, 1500);
+
+// ===== THEME =====
+function applyTheme(isLight) {
+  const root = document.documentElement;
+  const btn  = document.getElementById('themeToggle');
+  const knob = btn.querySelector('.theme-toggle-knob');
+  const lbl  = document.getElementById('themeLabel');
+  if (isLight) {
+    root.classList.add('light');
+    btn.classList.replace('dark','light');
+    knob.textContent = '☀️';
+    lbl.textContent  = '☀️';
+  } else {
+    root.classList.remove('light');
+    btn.classList.replace('light','dark');
+    knob.textContent = '🌙';
+    lbl.textContent  = '🌙';
+  }
+  localStorage.setItem('cryptopos_theme', isLight ? 'light' : 'dark');
+}
+function toggleTheme() {
+  applyTheme(!document.documentElement.classList.contains('light'));
+}
+
+// ===== INIT =====
+const savedTheme = localStorage.getItem('cryptopos_theme');
+applyTheme(savedTheme === 'light');
+renderMenus();
+renderOrders();
+updateStats();
+addChainLog('시스템 시작: Wizchain 연결됨');
+</script>
+</body>
+</html>
