@@ -63,8 +63,153 @@
     font-size: 11px; color: var(--muted);
     white-space: nowrap;
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
+  /* ══ LOGIN / REGISTER OVERLAY ══ */
+  .auth-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    transition: opacity 0.4s ease;
+  }
+  .auth-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .auth-card {
+    width: 100%; max-width: 460px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 40px 36px;
+    position: relative;
+    animation: authIn 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+  @keyframes authIn { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
+
+  .auth-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px; letter-spacing: 6px;
+    color: var(--accent);
+    text-align: center; margin-bottom: 4px;
+  }
+  .auth-sub {
+    text-align: center; font-size: 12px;
+    color: var(--muted); letter-spacing: 3px;
+    text-transform: uppercase; margin-bottom: 36px;
+  }
+  .auth-step-title {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 6px; color: var(--text);
+  }
+  .auth-step-desc {
+    font-size: 13px; color: var(--muted);
+    line-height: 1.7; margin-bottom: 28px;
+  }
+
+  /* wallet connect button */
+  .wallet-connect-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #f6851b, #e2761b);
+    border: none; border-radius: 14px;
+    padding: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    font-size: 15px; font-weight: 700; color: #fff;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  .wallet-connect-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(246,133,27,0.3); }
+  .wallet-connect-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+  .wallet-icon { font-size: 22px; }
+
+  .wallet-status {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+    display: none; align-items: center; gap: 12px;
+    margin-bottom: 20px;
+  }
+  .wallet-status.show { display: flex; }
+  .ws-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent); flex-shrink:0; }
+  .ws-addr { font-family:monospace; font-size:13px; color:var(--accent); }
+  .ws-chain { font-size:11px; color:var(--muted); margin-left:auto; }
+
+  /* register form */
+  .reg-form { display:none; }
+  .reg-form.show { display:block; }
+  .reg-field { margin-bottom:16px; }
+  .reg-field label { display:block; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+  .reg-field input, .reg-field textarea {
+    width:100%; background:var(--input-bg); border:1px solid var(--border);
+    border-radius:10px; padding:12px 14px; color:var(--text);
+    font-family:'Noto Sans KR',sans-serif; font-size:14px;
+    transition: border-color 0.2s;
+  }
+  .reg-field input:focus, .reg-field textarea:focus { outline:none; border-color:var(--accent); }
+  .reg-field .hint { font-size:11px; color:var(--muted); margin-top:4px; }
+
+  .coord-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .gps-btn {
+    width:100%; padding:10px;
+    background:rgba(0,201,138,0.1); border:1px solid var(--accent);
+    border-radius:10px; color:var(--accent); font-size:13px; font-weight:600;
+    cursor:pointer; margin-bottom:16px; transition:all 0.2s;
+  }
+  .gps-btn:hover { background:rgba(0,201,138,0.2); }
+
+  .auth-primary-btn {
+    width:100%; padding:15px;
+    background:var(--accent); border:none; border-radius:12px;
+    color:#000; font-size:15px; font-weight:700;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .auth-primary-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,201,138,0.3); }
+  .auth-primary-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+  .auth-divider { display:flex; align-items:center; gap:12px; margin:20px 0; }
+  .auth-divider-line { flex:1; height:1px; background:var(--border); }
+  .auth-divider-text { font-size:12px; color:var(--muted); }
+
+  .sheets-link-btn {
+    width:100%; padding:12px;
+    background:transparent; border:1px solid var(--border);
+    border-radius:10px; color:var(--muted); font-size:13px;
+    cursor:pointer; transition:all 0.2s; text-align:center;
+    text-decoration:none; display:block;
+  }
+  .sheets-link-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+
+  .auth-error {
+    background:rgba(255,107,53,0.1); border:1px solid rgba(255,107,53,0.3);
+    border-radius:10px; padding:12px 14px;
+    font-size:13px; color:var(--warn);
+    margin-bottom:16px; display:none;
+  }
+  .auth-error.show { display:block; }
+
+  /* loading spinner */
+  .auth-loading {
+    display:none; align-items:center; justify-content:center;
+    gap:10px; padding:14px;
+    font-size:13px; color:var(--muted);
+  }
+  .auth-loading.show { display:flex; }
+  .spin { animation:spin 1s linear infinite; display:inline-block; }
+  @keyframes spin { to{transform:rotate(360deg);} }
+
+  /* steps indicator */
+  .auth-steps {
+    display:flex; gap:6px; justify-content:center;
+    margin-bottom:28px;
+  }
+  .auth-step-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--border); transition:background 0.3s;
+  }
+  .auth-step-dot.active { background:var(--accent); }
+  .auth-step-dot.done { background:var(--accent); opacity:0.4; }
+
+  /* main app hidden while loading */
+  .app-content { transition: opacity 0.3s; }
+  .app-content.loading { opacity:0; pointer-events:none; }
     background: var(--bg);
     color: var(--text);
     font-family: 'Noto Sans KR', sans-serif;
@@ -472,9 +617,194 @@
     .stats-bar { grid-template-columns: repeat(2,1fr); }
     .right-panel { border-top: 1px solid var(--border); }
   }
+
+  /* ── 메인 탭 ── */
+  .main-tabs {
+    display: flex; gap: 4px;
+    padding: 0 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .main-tab {
+    padding: 8px 20px; border-radius: 8px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .main-tab.active { background: var(--surface2); border-color: var(--accent); color: var(--text); }
+  .main-tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Sheets 동기화 버튼 ── */
+  .btn-sync {
+    padding: 8px 16px; border-radius: 8px;
+    background: rgba(0,201,138,0.08); border: 1px solid rgba(0,201,138,0.3);
+    color: var(--accent); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .btn-sync:hover { background: rgba(0,201,138,0.18); }
+  .btn-sync:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Sheets 안내 배너 ── */
+  .sheets-banner {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: rgba(124,58,255,0.06);
+    border: 1px solid rgba(124,58,255,0.2);
+    border-radius: 12px; padding: 16px 14px;
+    margin-bottom: 20px;
+  }
+  .sb-icon { font-size: 24px; flex-shrink: 0; }
+  .sb-body { flex: 1; }
+  .sb-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .sb-desc  { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .sb-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; flex-shrink: 0; }
+  .sb-close:hover { color: var(--text); }
+
+  /* ── 매출 요약 ── */
+  .sales-summary {
+    display: grid; grid-template-columns: repeat(2,1fr);
+    gap: 12px; margin-bottom: 24px;
+  }
+  .ss-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px;
+  }
+  .ss-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--accent); }
+  .ss-label { font-size: 11px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── 트랜잭션 목록 ── */
+  .tx-list-header {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 10px;
+  }
+  .explorer-link { color: var(--accent); text-decoration: none; font-size: 12px; }
+  .explorer-link:hover { text-decoration: underline; }
+  .tx-list { display: flex; flex-direction: column; gap: 8px; }
+  .tx-row {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+  .tx-icon { font-size: 20px; flex-shrink: 0; }
+  .tx-info { flex: 1; }
+  .tx-hash { font-family: monospace; font-size: 12px; color: var(--accent); }
+  .tx-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tx-amount { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--text); letter-spacing: 1px; }
+  .tx-time { font-size: 11px; color: var(--muted); }
 </style>
 </head>
 <body>
+
+<!-- ══ AUTH OVERLAY ══ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo">CryptoPOS</div>
+    <div class="auth-sub">점주 관리 콘솔</div>
+
+    <!-- 스텝 인디케이터 -->
+    <div class="auth-steps">
+      <div class="auth-step-dot active" id="dot0"></div>
+      <div class="auth-step-dot" id="dot1"></div>
+      <div class="auth-step-dot" id="dot2"></div>
+    </div>
+
+    <!-- 에러 메시지 -->
+    <div class="auth-error" id="authError"></div>
+    <!-- 로딩 -->
+    <div class="auth-loading" id="authLoading"><span class="spin">⟳</span> 처리 중...</div>
+
+    <!-- ── STEP 0: 지갑 연결 ── -->
+    <div id="stepConnect">
+      <div class="auth-step-title">지갑 연결</div>
+      <div class="auth-step-desc">지갑을 연결하면 내 매장 정보를 자동으로 불러옵니다.</div>
+
+      <div class="wallet-status" id="walletStatus">
+        <div class="ws-dot"></div>
+        <div class="ws-addr" id="wsAddr">-</div>
+        <div class="ws-chain">WizChain</div>
+      </div>
+
+      <!-- MetaMask -->
+      <button class="wallet-connect-btn" onclick="authConnect('metamask')"
+        style="background:linear-gradient(135deg,#f6851b,#e2761b)">
+        <span class="wallet-icon">🦊</span> MetaMask
+      </button>
+
+      <!-- Trust Wallet -->
+      <button class="wallet-connect-btn" onclick="authConnect('trustwallet')"
+        style="background:linear-gradient(135deg,#3375ff,#1a56db)">
+        <span class="wallet-icon">🛡️</span> Trust Wallet
+      </button>
+
+      <!-- WalletConnect -->
+      <button class="wallet-connect-btn" onclick="authConnect('walletconnect')"
+        style="background:linear-gradient(135deg,#3b99fc,#006fff)">
+        <span class="wallet-icon">🔗</span> WalletConnect
+      </button>
+
+      <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--muted)">
+        WizChain (Chain ID: 10243) · 연결 시 자동 네트워크 전환
+      </div>
+    </div>
+
+    <!-- ── STEP 1: 매장 없음 → 신규 등록 ── -->
+    <div id="stepRegister" style="display:none">
+      <div class="auth-step-title">매장 등록</div>
+      <div class="auth-step-desc">등록된 매장이 없습니다. 아래 정보를 입력해 첫 매장을 등록하세요.</div>
+
+      <div class="reg-form show" id="regForm">
+        <div class="reg-field">
+          <label>매장 이름 *</label>
+          <input type="text" id="reg-name" placeholder="예: 위즈카페 강남점">
+        </div>
+        <div class="reg-field">
+          <label>카테고리 *</label>
+          <input type="text" id="reg-cat" placeholder="예: ☕ 카페">
+        </div>
+        <div class="reg-field">
+          <label>대표 이모지 *</label>
+          <input type="text" id="reg-emoji" placeholder="☕" maxlength="4">
+        </div>
+        <div class="reg-field">
+          <label>도로명 주소</label>
+          <input type="text" id="reg-address" placeholder="서울 강남구 테헤란로 123">
+        </div>
+        <div class="reg-field">
+          <label>영업시간</label>
+          <input type="text" id="reg-hours" placeholder="09:00–22:00">
+        </div>
+        <div class="reg-field">
+          <label>위치 좌표 (GPS)</label>
+          <button class="gps-btn" onclick="autoGPS()">📍 현재 위치 자동 입력</button>
+          <div class="coord-row">
+            <div>
+              <input type="number" id="reg-lat" placeholder="위도 (37.xxxx)" step="0.000001">
+            </div>
+            <div>
+              <input type="number" id="reg-lng" placeholder="경도 (127.xxxx)" step="0.000001">
+            </div>
+          </div>
+          <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px">Google 지도에서 클릭하면 좌표 확인 가능</div>
+        </div>
+
+        <button class="auth-primary-btn" onclick="registerStore()">🔗 WizChain에 매장 등록</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: 완료 → 진입 ── -->
+    <div id="stepDone" style="display:none">
+      <div class="auth-step-title">✅ 연결 완료</div>
+      <div class="auth-step-desc" id="stepDoneDesc">매장 정보를 불러왔습니다.</div>
+      <button class="auth-primary-btn" onclick="enterDashboard()">대시보드 입장 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP CONTENT ══ -->
+<div class="app-content" id="appContent">
 
 <div class="header">
   <div class="logo">CryptoPOS <span>점주 관리 콘솔</span></div>
@@ -484,7 +814,9 @@
     <button class="theme-toggle dark" id="themeToggle" onclick="toggleTheme()" title="다크/라이트 모드 전환">
       <div class="theme-toggle-knob">🌙</div>
     </button>
-    <div class="store-badge">☕ 위즈카페 강남점</div>
+    <div class="store-badge" id="storeBadge">🔗 연결 중...</div>
+    <button style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);font-size:12px;cursor:pointer;" onclick="openSheetsMenu()" title="메뉴 관리">📋 메뉴 수정</button>
+    <button style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);font-size:12px;cursor:pointer;" onclick="disconnectWallet()">⏏ 로그아웃</button>
   </div>
 </div>
 
@@ -513,68 +845,77 @@
 
 <div class="main">
   <div class="left-panel">
-    <div class="section-header">
-      <div>
-        <div class="section-title">메뉴 관리</div>
-      </div>
-      <button class="btn-open" onclick="toggleForm()">+ 메뉴 추가</button>
+
+    <!-- 메인 탭 네비게이션 -->
+    <div class="main-tabs">
+      <button class="main-tab active" onclick="switchMainTab('menu',this)">🍽 메뉴</button>
+      <button class="main-tab" onclick="switchMainTab('sales',this)">📊 매출</button>
     </div>
 
-    <!-- ADD FORM -->
-    <div class="add-form" id="addForm">
-      <div class="form-title">✦ 신규 메뉴 등록</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>메뉴 이름</label>
-          <input type="text" id="inp-name" placeholder="아메리카노">
-        </div>
-        <div class="form-group">
-          <label>카테고리</label>
-          <select id="inp-cat">
-            <option value="☕ 커피">☕ 커피</option>
-            <option value="🍵 논커피">🍵 논커피</option>
-            <option value="🥤 스무디">🥤 스무디</option>
-            <option value="🍰 디저트">🍰 디저트</option>
-            <option value="🥪 푸드">🥪 푸드</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>가격 (원)</label>
-          <input type="number" id="inp-price" placeholder="4500" min="0">
-        </div>
-        <div class="form-group">
-          <label>아이콘 이모지</label>
-          <input type="text" id="inp-emoji" placeholder="☕" maxlength="4">
-        </div>
-        <div class="form-group full">
-          <label>메뉴 설명</label>
-          <textarea id="inp-desc" placeholder="진한 에스프레소와 물의 조화..."></textarea>
-        </div>
-        <div class="form-group full">
-          <label>토큰 리워드 배율</label>
-          <div class="reward-slider-row">
-            <input type="range" id="inp-reward" min="1" max="3" step="0.5" value="1" oninput="updateReward(this.value)">
-            <div class="reward-badge" id="reward-display">1x</div>
-          </div>
+    <!-- ── 메뉴 탭 ── -->
+    <div id="tabMenu">
+      <div class="section-header">
+        <div class="section-title">메뉴 현황</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-sync" onclick="syncFromSheets()">⟳ Sheets 동기화</button>
+          <button class="btn-open" onclick="openSheets()">📋 메뉴 수정</button>
         </div>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-primary" onclick="addMenu()">🔗 체인에 등록</button>
-        <button class="btn btn-secondary" onclick="toggleForm()">취소</button>
+
+      <!-- Sheets 안내 배너 -->
+      <div class="sheets-banner" id="sheetsBanner">
+        <div class="sb-icon">📋</div>
+        <div class="sb-body">
+          <div class="sb-title">메뉴는 Google Sheets에서 관리합니다</div>
+          <div class="sb-desc">Sheets에서 수정 후 "Sheets 동기화" 버튼을 누르면 앱에 반영됩니다.</div>
+        </div>
+        <button class="sb-close" onclick="this.parentElement.style.display='none'">✕</button>
+      </div>
+
+      <!-- 카테고리 탭 -->
+      <div class="tabs" id="menuTabs">
+        <button class="tab active" onclick="filterMenus('all', this)">전체</button>
+      </div>
+
+      <!-- 메뉴 그리드 -->
+      <div class="menu-grid" id="menuGrid"></div>
+    </div>
+
+    <!-- ── 매출 탭 ── -->
+    <div id="tabSales" style="display:none">
+      <div class="section-header">
+        <div class="section-title">온체인 매출</div>
+        <button class="btn-sync" onclick="loadOnchainSales()">⟳ 갱신</button>
+      </div>
+
+      <div class="sales-summary">
+        <div class="ss-item">
+          <div class="ss-val" id="ss-total">-</div>
+          <div class="ss-label">총 수취 WUSD</div>
+        </div>
+        <div class="ss-item">
+          <div class="ss-val" id="ss-count">-</div>
+          <div class="ss-label">총 주문 수</div>
+        </div>
+        <div class="ss-item">
+          <div class="ss-val" id="ss-oz">-</div>
+          <div class="ss-label">총 OZ 지급</div>
+        </div>
+        <div class="ss-item">
+          <div class="ss-val" id="ss-wusd-bal">-</div>
+          <div class="ss-label">현재 WUSD 잔액</div>
+        </div>
+      </div>
+
+      <div class="tx-list-header">
+        <span>최근 거래 내역</span>
+        <a id="explorerLink" href="https://explorer.wizclass.net" target="_blank" class="explorer-link">익스플로러 →</a>
+      </div>
+      <div class="tx-list" id="txList">
+        <div class="empty"><div class="empty-icon">⛓</div>컨트랙트 배포 후 매출 데이터가 표시됩니다</div>
       </div>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs">
-      <button class="tab active" onclick="filterMenus('all', this)">전체</button>
-      <button class="tab" onclick="filterMenus('☕ 커피', this)">☕ 커피</button>
-      <button class="tab" onclick="filterMenus('🍵 논커피', this)">🍵 논커피</button>
-      <button class="tab" onclick="filterMenus('🍰 디저트', this)">🍰 디저트</button>
-      <button class="tab" onclick="filterMenus('🥤 스무디', this)">🥤 스무디</button>
-    </div>
-
-    <!-- MENU GRID -->
-    <div class="menu-grid" id="menuGrid"></div>
   </div>
 
   <div class="right-panel">
@@ -591,15 +932,315 @@
       <div class="empty"><div class="empty-icon">📭</div>주문이 없습니다<br><small>고객 앱에서 주문하면 실시간으로 표시됩니다</small></div>
     </div>
     <div class="chain-log">
-      <div class="chain-log-title">⛓ Wizchain 트랜잭션 로그</div>
+      <div class="chain-log-title">⛓ WizChain 트랜잭션 로그</div>
       <div id="chainLog"></div>
     </div>
   </div>
 </div>
 
+</div><!-- /.app-content -->
+
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <script>
+// ══════════════════════════════════════
+//  WizChain 설정
+// ══════════════════════════════════════
+const WIZCHAIN = {
+  chainId:     10243,
+  chainIdHex:  '0x27F3',
+  chainName:   'WizChain',
+  rpcUrl:      'https://rpc.wizclass.net',
+  symbol:      'WCN',
+  explorerUrl: 'https://explorer.wizclass.net',
+};
+
+// CryptoPOS 컨트랙트 주소 (배포 후 입력)
+const CRYPTOPOS_ADDRESS = '0x0000000000000000000000000000000000000000'; // ← 배포 후 교체
+
+const CRYPTOPOS_ABI = [
+  "function registerStore(string name) returns (uint256)",
+  "function getStore(uint256 storeId) view returns (address wallet, string name, bool active, uint256 totalSales, uint256 orderCount)",
+  "function getStoreByWallet(address wallet) view returns (uint256)",
+  "function updateWallet(uint256 storeId, address newWallet)",
+  "function toggleStore(uint256 storeId)",
+];
+
+// Google Sheets 설정 (메뉴 읽기용)
+const SHEETS_CONFIG = {
+  SHEET_ID:   'YOUR_GOOGLE_SHEET_ID',  // ← 입력
+  SHEET_NAME: 'stores',
+  API_KEY:    'YOUR_GOOGLE_API_KEY',   // ← 입력
+};
+
+// ── 상태 ──
+let authProvider = null;
+let authSigner   = null;
+let authAddress  = null;
+let ownerStoreId = null;
+let ownerStore   = null;
+let posContract  = null;
+
+// ══════════════════════════════════════
+//  AUTH — MetaMask 연결
+// ══════════════════════════════════════
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg; el.classList.add('show');
+}
+function hideAuthError() {
+  document.getElementById('authError').classList.remove('show');
+}
+function showAuthLoading(show) {
+  document.getElementById('authLoading').classList.toggle('show', show);
+}
+function setAuthStep(n) {
+  [0,1,2].forEach(i => {
+    const dot = document.getElementById(`dot${i}`);
+    dot.className = 'auth-step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+  document.getElementById('stepConnect').style.display  = n === 0 ? 'block' : 'none';
+  document.getElementById('stepRegister').style.display = n === 1 ? 'block' : 'none';
+  document.getElementById('stepDone').style.display     = n === 2 ? 'block' : 'none';
+}
+
+// ── WizChain + API 설정 ──
+const WIZCHAIN = {
+  chainId:    10243,
+  chainIdHex: '0x27F3',
+  chainName:  'WizChain',
+  rpcUrl:     'https://rpc.wizclass.net',
+  symbol:     'WCN',
+  explorer:   'https://explorer.wizclass.net',
+};
+const API_BASE = 'http://15.164.93.243';  // ← EC2 퍼블릭 IP
+
+async function authConnect(type = 'metamask') {
+  hideAuthError();
+  showAuthLoading(true);
+
+  let provider = null;
+
+  try {
+    if (type === 'metamask') {
+      if (!window.ethereum) {
+        showAuthError('MetaMask가 설치되지 않았습니다. metamask.io에서 설치하세요.');
+        showAuthLoading(false); return;
+      }
+      provider = window.ethereum;
+
+    } else if (type === 'trustwallet') {
+      if (window.ethereum?.isTrust || window.trustwallet) {
+        provider = window.trustwallet || window.ethereum;
+      } else if (window.ethereum) {
+        provider = window.ethereum;
+      } else {
+        showAuthError('Trust Wallet 앱에서 이 페이지를 열어주세요.');
+        showAuthLoading(false); return;
+      }
+
+    } else if (type === 'walletconnect') {
+      if (!window.ethereum) {
+        showAuthError('모바일 지갑 앱의 DApp 브라우저로 이 페이지를 열어주세요.');
+        showAuthLoading(false); return;
+      }
+      provider = window.ethereum;
+    }
+
+    // 계정 요청
+    const accounts = await provider.request({ method: 'eth_requestAccounts' });
+    if (!accounts.length) throw new Error('계정을 선택하지 않았습니다');
+
+    authAddress = accounts[0];
+
+    // WizChain 전환
+    await switchToWizChain(provider);
+
+    // 지갑 상태 표시
+    document.getElementById('wsAddr').textContent =
+      authAddress.slice(0,6) + '...' + authAddress.slice(-4);
+    document.getElementById('walletStatus').classList.add('show');
+
+    // API에서 내 매장 조회
+    try {
+      const res   = await fetch(`${API_BASE}/api/stores?wallet=${authAddress}`);
+      const data  = await res.json();
+      const myStore = data.stores?.find(
+        s => s.wallet_address?.toLowerCase() === authAddress.toLowerCase()
+      );
+
+      if (myStore) {
+        ownerStore   = myStore;
+        ownerStoreId = myStore.id;
+        document.getElementById('stepDoneDesc').textContent =
+          `"${myStore.name}" 매장이 확인되었습니다.`;
+        setAuthStep(2);
+      } else {
+        setAuthStep(1);
+      }
+    } catch {
+      // 컨트랙트/API 미연동 시 데모 모드
+      ownerStore = { id: 0, name: '내 매장 (데모)', active: true };
+      document.getElementById('stepDoneDesc').textContent = '데모 모드로 진입합니다.';
+      setAuthStep(2);
+    }
+
+    localStorage.setItem('cryptopos_owner_wallet', authAddress);
+
+  } catch (e) {
+    showAuthError('연결 실패: ' + (e.message || e));
+  } finally {
+    showAuthLoading(false);
+  }
+}
+
+async function switchToWizChain(provider) {
+  provider = provider || window.ethereum;
+  try {
+    await provider.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: WIZCHAIN.chainIdHex }],
+    });
+  } catch (err) {
+    if (err.code === 4902) {
+      await provider.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId:           WIZCHAIN.chainIdHex,
+          chainName:         WIZCHAIN.chainName,
+          nativeCurrency:    { name:'WCN', symbol:WIZCHAIN.symbol, decimals:18 },
+          rpcUrls:           [WIZCHAIN.rpcUrl],
+          blockExplorerUrls: [WIZCHAIN.explorer],
+        }],
+      });
+    }
+  }
+}
+
+async function registerStore() {
+  hideAuthError();
+  const name    = document.getElementById('reg-name').value.trim();
+  const cat     = document.getElementById('reg-cat').value.trim();
+  const emoji   = document.getElementById('reg-emoji').value.trim() || '🏪';
+  const address = document.getElementById('reg-address').value.trim();
+  const hours   = document.getElementById('reg-hours').value.trim();
+  const lat     = parseFloat(document.getElementById('reg-lat').value);
+  const lng     = parseFloat(document.getElementById('reg-lng').value);
+
+  if (!name) { showAuthError('매장 이름을 입력하세요.'); return; }
+  if (!lat || !lng) { showAuthError('위치 좌표를 입력하세요. (GPS 자동 입력 버튼 사용)'); return; }
+
+  showAuthLoading(true);
+
+  if (CRYPTOPOS_ADDRESS !== '0x0000000000000000000000000000000000000000') {
+    try {
+      const tx = await posContract.registerStore(name);
+      await tx.wait();
+      const storeId = await posContract.getStoreByWallet(authAddress);
+      ownerStoreId  = Number(storeId);
+      ownerStore    = { id: ownerStoreId, name, active: true };
+    } catch (e) {
+      showAuthError('온체인 등록 실패: ' + e.message); showAuthLoading(false); return;
+    }
+  } else {
+    // 데모 모드
+    ownerStore = { id: 0, name, active: true };
+  }
+
+  // Google Sheets 등록 안내 (직접 열기)
+  const sheetsUrl = `https://docs.google.com/spreadsheets/d/${SHEETS_CONFIG.SHEET_ID}`;
+  const storeRow  = `${ownerStore.id}\t${name}\t${cat}\t${emoji}\t${lat}\t${lng}\t${address}\t${hours}\t${ownerStoreId}\t${authAddress}\t[]`;
+  localStorage.setItem('cryptopos_pending_row', storeRow);
+
+  document.getElementById('stepDoneDesc').textContent =
+    `"${name}" 등록 완료! Google Sheets에 매장 정보를 추가하면 고객 앱에 표시됩니다.`;
+  setAuthStep(2);
+  showAuthLoading(false);
+}
+
+async function autoGPS() {
+  if (!navigator.geolocation) { alert('GPS를 지원하지 않습니다'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('reg-lat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('reg-lng').value = pos.coords.longitude.toFixed(6);
+  }, () => alert('위치 권한을 허용해주세요'));
+}
+
+function enterDashboard() {
+  // 오버레이 숨기기
+  document.getElementById('authOverlay').classList.add('hidden');
+  setTimeout(() => {
+    document.getElementById('authOverlay').style.display = 'none';
+  }, 400);
+
+  // 헤더 배지 업데이트
+  const badge = document.getElementById('storeBadge');
+  if (ownerStore) badge.textContent = ownerStore.name.slice(0, 14);
+
+  // Sheets에서 메뉴 로드
+  loadMenusFromSheets();
+
+  // 온체인 이벤트 리스닝 시작 (컨트랙트 배포 후)
+  setTimeout(() => startOnchainListener(), 1000);
+
+  addChainLog(`점주 로그인: ${authAddress?.slice(0,6)}...${authAddress?.slice(-4)} | WizChain #${WIZCHAIN.chainId}`);
+}
+
+function disconnectWallet() {
+  localStorage.removeItem('cryptopos_owner_wallet');
+  authAddress = null; authProvider = null;
+  document.getElementById('authOverlay').style.display = 'flex';
+  document.getElementById('authOverlay').classList.remove('hidden');
+  document.getElementById('walletStatus').classList.remove('show');
+  setAuthStep(0);
+}
+
+function openSheetsMenu() {
+  const url = SHEETS_CONFIG.SHEET_ID !== 'YOUR_GOOGLE_SHEET_ID'
+    ? `https://docs.google.com/spreadsheets/d/${SHEETS_CONFIG.SHEET_ID}`
+    : 'sheets-guide.html';
+  window.open(url, '_blank');
+}
+
+// ── Sheets에서 메뉴 로드 ──
+async function loadMenusFromSheets() {
+  const { SHEET_ID, SHEET_NAME, API_KEY } = SHEETS_CONFIG;
+  if (SHEET_ID === 'YOUR_GOOGLE_SHEET_ID') return; // 미설정
+
+  try {
+    const range = encodeURIComponent(`${SHEET_NAME}!A2:K`);
+    const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
+    const res   = await fetch(url);
+    const data  = await res.json();
+    const rows  = data.values || [];
+
+    // 내 지갑에 해당하는 행 찾기
+    const myRow = rows.find(r => r[9]?.toLowerCase() === authAddress?.toLowerCase());
+    if (myRow && myRow[10]) {
+      const sheetMenus = JSON.parse(myRow[10]);
+      if (sheetMenus.length) {
+        menus = sheetMenus;
+        saveMenus();
+        renderMenus();
+        showToast('📋 Sheets에서 메뉴 동기화 완료!');
+      }
+    }
+  } catch (e) {
+    console.warn('Sheets 메뉴 로드 실패:', e.message);
+  }
+}
+
+// ── 자동 재연결 (이전 방문 점주) ──
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('cryptopos_owner_wallet');
+  if (saved && window.ethereum) {
+    // 이미 연결된 경우 자동 시도
+    setTimeout(() => authConnect(), 500);
+  }
+});
+
+
 // ===== SHARED STATE via localStorage =====
 const MENU_KEY = 'cryptopos_menus';
 const ORDER_KEY = 'cryptopos_orders';
@@ -624,10 +1265,139 @@ if (menus.length === 0) {
   saveMenus();
 }
 
-function saveMenus() {
-  localStorage.setItem(MENU_KEY, JSON.stringify(menus));
-  updateStats();
+// ── Sheets 동기화 (읽기) ──
+async function syncFromSheets() {
+  const btn = document.querySelector('.btn-sync');
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ 동기화 중...'; }
+
+  const { SHEET_ID, SHEET_NAME, API_KEY } = SHEETS_CONFIG;
+  if (SHEET_ID === 'YOUR_GOOGLE_SHEET_ID') {
+    showToast('⚠️ Sheets 설정이 필요합니다 (sheets-guide.html 참고)');
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Sheets 동기화'; }
+    return;
+  }
+
+  try {
+    const range = encodeURIComponent(`${SHEET_NAME}!A2:K`);
+    const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
+    const res   = await fetch(url);
+    if (!res.ok) throw new Error('API 오류 ' + res.status);
+    const data  = await res.json();
+    const rows  = data.values || [];
+
+    // 내 지갑 주소로 내 매장 행 찾기
+    const myRow = authAddress
+      ? rows.find(r => r[9]?.toLowerCase() === authAddress.toLowerCase())
+      : rows[0]; // 미연결 시 첫 행 사용 (데모)
+
+    if (myRow && myRow[10]) {
+      const sheetMenus = JSON.parse(myRow[10]);
+      menus = sheetMenus;
+      saveMenus();
+      renderMenus();
+      addChainLog(`Sheets 동기화: ${sheetMenus.length}개 메뉴 로드됨`);
+      showToast(`✅ ${sheetMenus.length}개 메뉴 동기화 완료!`);
+    } else {
+      showToast('내 매장 데이터를 찾을 수 없습니다. Sheets에 지갑 주소를 확인하세요.');
+    }
+  } catch (e) {
+    showToast('❌ 동기화 실패: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Sheets 동기화'; }
+  }
 }
+
+// ── Sheets 열기 ──
+function openSheets() {
+  const { SHEET_ID } = SHEETS_CONFIG;
+  const url = SHEET_ID !== 'YOUR_GOOGLE_SHEET_ID'
+    ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}`
+    : 'sheets-guide.html';
+  window.open(url, '_blank');
+}
+
+// ── 메인 탭 전환 ──
+function switchMainTab(tab, btn) {
+  document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tabMenu').style.display   = tab === 'menu'  ? 'block' : 'none';
+  document.getElementById('tabSales').style.display  = tab === 'sales' ? 'block' : 'none';
+  if (tab === 'sales') loadOnchainSales();
+}
+
+// ── 온체인 매출 조회 ──
+async function loadOnchainSales() {
+  const txList = document.getElementById('txList');
+
+  // 컨트랙트 미배포 시 데모 데이터
+  if (CRYPTOPOS_ADDRESS === '0x0000000000000000000000000000000000000000') {
+    document.getElementById('ss-total').textContent   = '0';
+    document.getElementById('ss-count').textContent   = '0';
+    document.getElementById('ss-oz').textContent      = '0';
+    document.getElementById('ss-wusd-bal').textContent = '0';
+    txList.innerHTML = `<div class="empty"><div class="empty-icon">⛓</div>컨트랙트 배포 후 실제 데이터가 표시됩니다<br><small>CryptoPOS.sol 배포 → CRYPTOPOS_ADDRESS 입력</small></div>`;
+    return;
+  }
+
+  txList.innerHTML = `<div class="empty"><div class="empty-icon" style="animation:spin 1s linear infinite;display:inline-block">⟳</div> 조회 중...</div>`;
+
+  try {
+    // 온체인 매장 데이터
+    if (posContract && ownerStoreId) {
+      const info = await posContract.getStore(ownerStoreId);
+      document.getElementById('ss-total').textContent  = parseFloat(ethers.formatUnits(info[3], 18)).toFixed(2);
+      document.getElementById('ss-count').textContent  = Number(info[4]).toLocaleString();
+    }
+
+    // WUSD 잔액
+    if (authAddress) {
+      const WUSD_ABI = ["function balanceOf(address) view returns (uint256)"];
+      const wusd = new ethers.Contract('0x1234B0663b82b260DebEe961C2b5DBfC79bADdBd', WUSD_ABI, authProvider);
+      const bal  = await wusd.balanceOf(authAddress);
+      document.getElementById('ss-wusd-bal').textContent = parseFloat(ethers.formatUnits(bal, 18)).toFixed(2);
+    }
+
+    // PaymentProcessed 이벤트 조회
+    const EVENTS_ABI = ["event PaymentProcessed(uint256 indexed storeId, address indexed customer, uint256 wusdAmount, uint256 ozRewarded, uint256 multiplier, bytes32 orderId)"];
+    const posEvents  = new ethers.Contract(CRYPTOPOS_ADDRESS, EVENTS_ABI, authProvider);
+    const filter     = posEvents.filters.PaymentProcessed(ownerStoreId);
+    const events     = await posEvents.queryFilter(filter, -1000); // 최근 1000블록
+
+    // OZ 총합
+    let totalOz = 0n;
+    events.forEach(e => { totalOz += e.args.ozRewarded; });
+    document.getElementById('ss-oz').textContent = parseFloat(ethers.formatUnits(totalOz, 18)).toFixed(0);
+
+    // 트랜잭션 목록 렌더링
+    if (!events.length) {
+      txList.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>아직 결제 내역이 없습니다</div>`;
+    } else {
+      const explorerUrl = 'https://explorer.wizclass.net';
+      document.getElementById('explorerLink').href = `${explorerUrl}/address/${authAddress}`;
+      txList.innerHTML = [...events].reverse().slice(0, 20).map(e => {
+        const wusd = parseFloat(ethers.formatUnits(e.args.wusdAmount, 18)).toFixed(2);
+        const oz   = parseFloat(ethers.formatUnits(e.args.ozRewarded, 18)).toFixed(1);
+        const hash = e.transactionHash;
+        const shortHash = hash.slice(0,8)+'...'+hash.slice(-6);
+        return `<div class="tx-row">
+          <div class="tx-icon">💳</div>
+          <div class="tx-info">
+            <a href="${explorerUrl}/tx/${hash}" target="_blank" class="tx-hash">${shortHash}</a>
+            <div class="tx-detail">고객: ${e.args.customer.slice(0,6)}...${e.args.customer.slice(-4)} · OZ +${oz}</div>
+          </div>
+          <div>
+            <div class="tx-amount">${wusd} WUSD</div>
+            <div class="tx-time">블록 #${e.blockNumber}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  } catch (e) {
+    txList.innerHTML = `<div class="empty">조회 실패: ${e.message}</div>`;
+  }
+}
+
+
 function saveOrders() {
   localStorage.setItem(ORDER_KEY, JSON.stringify(orders));
   updateStats();
@@ -879,7 +1649,64 @@ applyTheme(savedTheme === 'light');
 renderMenus();
 renderOrders();
 updateStats();
-addChainLog('시스템 시작: Wizchain 연결됨');
+
+// 인증 오버레이 초기화
+setAuthStep(0);
+if (!localStorage.getItem('cryptopos_owner_wallet')) {
+  addChainLog('시스템 시작: 점주 로그인 필요');
+} else {
+  addChainLog('시스템 시작: 이전 지갑 감지, 자동 연결 중...');
+}
+
+// ── 실시간 온체인 이벤트 리스닝 ──
+// enterDashboard() 이후 컨트랙트 연결되면 자동 시작
+function startOnchainListener() {
+  if (CRYPTOPOS_ADDRESS === '0x0000000000000000000000000000000000000000') return;
+  if (!posContract || !ownerStoreId) return;
+
+  const EVENTS_ABI = ["event PaymentProcessed(uint256 indexed storeId, address indexed customer, uint256 wusdAmount, uint256 ozRewarded, uint256 multiplier, bytes32 orderId)"];
+  const posEvents  = new ethers.Contract(CRYPTOPOS_ADDRESS, EVENTS_ABI, authProvider);
+
+  // 내 매장 결제 이벤트 실시간 감지
+  posEvents.on(posEvents.filters.PaymentProcessed(ownerStoreId), (storeId, customer, wusdAmount, ozRewarded, multiplier, orderId, event) => {
+    const wusd     = parseFloat(ethers.formatUnits(wusdAmount, 18)).toFixed(2);
+    const oz       = parseFloat(ethers.formatUnits(ozRewarded, 18)).toFixed(1);
+    const shortCust = customer.slice(0,6)+'...'+customer.slice(-4);
+    const txHash   = event.log.transactionHash;
+    const shortHash = txHash.slice(0,8)+'...'+txHash.slice(-6);
+
+    // 토스트 알림
+    showToast(`💳 새 결제! ${wusd} WUSD 수취 · OZ +${oz}`);
+
+    // 체인 로그
+    addChainLog(`결제 수신 [${shortHash}] ${wusd} WUSD ← ${shortCust}`);
+
+    // 주문 목록에 추가 (고객 앱과 연동)
+    const newOrder = {
+      id: Date.now(),
+      items: [{ name: '온체인 결제', qty: 1, price: parseFloat(wusd) }],
+      total: parseFloat(wusd),
+      totalTokens: parseFloat(oz),
+      status: 'new',
+      time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+      payMethod: 'WUSD',
+      txHash,
+    };
+    orders.unshift(newOrder);
+    saveOrders();
+    renderOrders();
+
+    // 매출 탭이 열려있으면 즉시 갱신
+    if (document.getElementById('tabSales').style.display !== 'none') {
+      loadOnchainSales();
+    }
+  });
+
+  addChainLog('⛓ 온체인 이벤트 리스닝 시작 (storeId: ' + ownerStoreId + ')');
+}
+
+// enterDashboard 후 리스닝 시작 — 기존 함수 보완
+const _origEnter = typeof enterDashboard === 'function' ? enterDashboard : null;
 </script>
 </body>
 </html>
