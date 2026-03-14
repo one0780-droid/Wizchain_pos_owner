@@ -474,18 +474,15 @@ async function authConnect(type){
 
     let provider = await getEthereum();
 
-    // 감지 실패 시 타입별 처리
+    // 감지 실패 시 타입별 딥링크로 앱 직접 실행
     if(!provider){
-      if(type==='metamask'){
-        showErr('MetaMask를 감지하지 못했습니다. MetaMask 앱 내장 브라우저에서 열거나 확장 프로그램 설치 후 새로고침하세요.');
-        showLoad(false); return;
-      }else if(type==='trustwallet'){
-        window.open('https://link.trustwallet.com/open_url?coin_id=60&url='+encodeURIComponent(location.href),'_blank');
-        showLoad(false); return;
+      if(type==='trustwallet'){
+        window.location.href='https://link.trustwallet.com/open_url?coin_id=60&url='+encodeURIComponent(location.href);
       }else{
-        showErr('지갑을 감지하지 못했습니다. MetaMask 앱 내장 브라우저에서 열어주세요.');
-        showLoad(false); return;
+        // MetaMask 또는 WalletConnect → MetaMask 딥링크
+        window.location.href='https://metamask.app.link/dapp/'+location.host+location.pathname;
       }
+      showLoad(false); return;
     }
 
     authProvider=new ethers.BrowserProvider(provider);
