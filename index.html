@@ -355,6 +355,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto S
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <script>
+// ethers 로드 실패 시 fallback
+if(typeof ethers==='undefined'){
+  document.write('<script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"><\/script>');
+}
+</script>
+<script>
 const API_BASE='';  // 서버 주소 (없으면 샘플 데이터 사용)
 const WIZCHAIN={chainId:10243,chainIdHex:'0x27F3',chainName:'WizChain',rpcUrl:'https://rpc.wizclass.net',symbol:'WCN'};
 
@@ -446,18 +452,16 @@ function showLoad(v){ document.getElementById('authLoad').classList.toggle('show
 
 // ── 지갑 연결 ──
 // ethereum 감지 (inject 지연 대응)
+// ethereum 감지 (최대 3초 대기)
 function getEthereum(){
   return new Promise(resolve=>{
-    // 즉시 확인
     if(window.ethereum) return resolve(window.ethereum);
-    // 이미 주입됐지만 다른 키로 있을 수 있음
     if(window.web3?.currentProvider) return resolve(window.web3.currentProvider);
-    // 최대 6초 대기
     let tries=0;
-    const check=setInterval(()=>{
-      if(window.ethereum){ clearInterval(check); resolve(window.ethereum); }
-      else if(window.web3?.currentProvider){ clearInterval(check); resolve(window.web3.currentProvider); }
-      else if(++tries>30){ clearInterval(check); resolve(null); }
+    const t=setInterval(()=>{
+      if(window.ethereum){clearInterval(t);resolve(window.ethereum);}
+      else if(window.web3?.currentProvider){clearInterval(t);resolve(window.web3.currentProvider);}
+      else if(++tries>30){clearInterval(t);resolve(null);}
     },100);
   });
 }
@@ -465,25 +469,47 @@ function getEthereum(){
 async function authConnect(type){
   hideErr(); showLoad(true);
   try{
-    const ethereum=await getEthereum();
-    if(!ethereum){
-      // 한번 더 직접 시도
-      if(window.ethereum){
-        // 감지 타이밍 문제 - 직접 재시도
-      } else {
-        showErr('지갑을 감지하지 못했습니다. MetaMask 앱 → DApp 브라우저에서 열거나, 브라우저를 새로고침 후 다시 시도하세요.');
+    // ethers 확인
+    if(typeof ethers==='undefined') throw new Error('ethers 라이브러리 로드 실패. 새로고침 후 다시 시도하세요.');
+
+    let provider = await getEthereum();
+
+    // 감지 실패 시 타입별 처리
+    if(!provider){
+      if(type==='metamask'){
+        showErr('MetaMask를 감지하지 못했습니다. MetaMask 앱 내장 브라우저에서 열거나 확장 프로그램 설치 후 새로고침하세요.');
+        showLoad(false); return;
+      }else if(type==='trustwallet'){
+        window.open('https://link.trustwallet.com/open_url?coin_id=60&url='+encodeURIComponent(location.href),'_blank');
+        showLoad(false); return;
+      }else{
+        showErr('지갑을 감지하지 못했습니다. MetaMask 앱 내장 브라우저에서 열어주세요.');
         showLoad(false); return;
       }
     }
-    const finalEthereum = ethereum || window.ethereum;
-    authProvider=new ethers.BrowserProvider(finalEthereum);
+
+    authProvider=new ethers.BrowserProvider(provider);
     await authProvider.send('eth_requestAccounts',[]);
     const signer=await authProvider.getSigner();
     authAddr=await signer.getAddress();
-    try{ await finalEthereum.request({method:'wallet_switchEthereumChain',params:[{chainId:WIZCHAIN.chainIdHex}]}); }
-    catch(e){ if(e.code===4902) await finalEthereum.request({method:'wallet_addEthereumChain',params:[{chainId:WIZCHAIN.chainIdHex,chainName:WIZCHAIN.chainName,nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},rpcUrls:[WIZCHAIN.rpcUrl]}]}); }
+
+    // WizChain 네트워크 전환
+    try{
+      await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:WIZCHAIN.chainIdHex}]});
+    }catch(e){
+      if(e.code===4902||e.code===-32603){
+        await provider.request({method:'wallet_addEthereumChain',params:[{
+          chainId:WIZCHAIN.chainIdHex,chainName:WIZCHAIN.chainName,
+          nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},
+          rpcUrls:[WIZCHAIN.rpcUrl],blockExplorerUrls:['https://explorer.wizclass.net']
+        }]});
+      }
+    }
+
     document.getElementById('wsAddr').textContent=authAddr.slice(0,6)+'...'+authAddr.slice(-4);
     document.getElementById('wsBox').classList.add('show');
+
+    // 서버에서 매장 조회
     try{
       if(!API_BASE) throw new Error('no server');
       const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),3000);
@@ -492,11 +518,16 @@ async function authConnect(type){
       const my=d.stores?.find(s=>s.wallet_address?.toLowerCase()===authAddr.toLowerCase());
       if(my){ ownerStore=my; document.getElementById('doneDesc').textContent=`"${my.name}" 매장이 확인되었습니다.`; setStep(2); }
       else setStep(1);
-    }catch{ ownerStore={id:0,name:'데모 매장',active:true}; document.getElementById('doneDesc').textContent='데모 모드로 진입합니다.'; setStep(2); }
+    }catch{
+      ownerStore={id:0,name:'데모 매장',active:true};
+      document.getElementById('doneDesc').textContent='데모 모드로 진입합니다.';
+      setStep(2);
+    }
     localStorage.setItem('w3pos_owner',authAddr);
+
   }catch(e){
     if(e.code===4001) showErr('연결을 취소했습니다.');
-    else showErr('연결 실패: '+(e.message||e));
+    else showErr('연결 실패: '+(e.message||String(e)));
   }
   finally{ showLoad(false); }
 }
