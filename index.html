@@ -2,634 +2,713 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WizPOS</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f4f4f4;--surface:#fff;--surface2:#ebebeb;--border:#d8d8d8;--accent:#00a86b;--purple:#5b2be8;--warn:#e03e1a;--text:#111;--muted:#888;--gold:#b8860b}
-.dark{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#333;--accent:#00c98a;--purple:#7c3aff;--warn:#ff5c35;--text:#f0f0f0;--muted:#666;--gold:#f5c518}
+:root {
+  --bg:#f5f5f5; --surface:#fff; --border:#e8e8e8;
+  --accent:#00a86b; --text:#111; --muted:#888;
+  --warn:#e03e1a; --gold:#b8860b; --purple:#5b2be8;
+}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:16px;overflow:hidden}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif}
+body{max-width:430px;margin:0 auto;position:relative}
 
-/* 설정 버튼 */
-.s-wrap{position:relative}
-.s-btn{display:flex;align-items:center;gap:6px;background:transparent;border:2px solid var(--border);border-radius:20px;padding:7px 13px;cursor:pointer;font-size:15px;font-weight:700;color:var(--text)}
-.s-btn:active{opacity:.75}
-.s-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:2px solid var(--border);border-radius:14px;min-width:175px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:1600}
-.s-menu.open{display:block}
-.s-sec{padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
-.s-item{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;font-size:15px;font-weight:600;cursor:pointer;border-bottom:1px solid var(--border)}
-.s-item:last-child{border-bottom:none}
-.s-item:active{background:var(--surface2)}
-.s-item.red{color:var(--warn)}
-.s-chk{color:var(--accent);font-weight:900}
-.s-div{height:2px;background:var(--border)}
-.overlay-bg{display:none;position:fixed;inset:0;z-index:1400}
-.overlay-bg.show{display:block}
+/* ── 페이지 전환 ── */
+.page{display:none;min-height:100vh;flex-direction:column}
+.page.on{display:flex}
 
-/* AUTH */
-.auth{position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto}
-.auth.hidden{display:none}
-.auth-card{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;width:100%;padding:40px 24px;}
-.auth-steps{display:flex;gap:8px;margin-bottom:16px;justify-content:center}
-.step-dot{width:10px;height:10px;border-radius:50%;background:var(--border)}
-.step-dot.active{background:var(--accent);width:28px;border-radius:6px}
-.step-dot.done{background:var(--accent)}
-.auth-logo{text-align:center;margin-bottom:3px}
-.auth-sub{font-size:11px;color:var(--muted);letter-spacing:2px;text-align:center;margin-bottom:12px}
-.auth-wiz{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--border);border-radius:18px;padding:5px 14px;margin-bottom:24px}
-.wiz-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+/* ════════════════════
+   PAGE 1: 지갑 연결
+════════════════════ */
+#pg-wallet{align-items:center;justify-content:center;padding:40px 24px;background:var(--bg)}
+.logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:52px;letter-spacing:-1px;line-height:1;margin-bottom:8px}
+.logo span{color:var(--accent)}
+.tagline{font-size:13px;color:var(--muted);letter-spacing:3px;margin-bottom:16px}
+.wiz-badge{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--border);border-radius:20px;padding:6px 16px;margin-bottom:44px}
+.wiz-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.wiz-nm{font-size:13px;font-weight:700;color:var(--accent)}
+.wiz-name{font-size:13px;font-weight:700;color:var(--accent)}
 .wiz-by{font-size:12px;color:var(--muted)}
-.auth-err{background:var(--surface2);border:2px solid var(--warn);border-radius:10px;padding:12px;margin-bottom:16px;font-size:14px;color:var(--warn);display:none}
-.auth-err.show{display:block}
-.auth-loading{text-align:center;color:var(--muted);font-size:14px;margin-bottom:12px;display:none}
-.auth-loading.show{display:block}
-.ws-box{background:var(--surface2);border:2px solid var(--border);border-radius:12px;padding:14px 16px;display:none;align-items:center;gap:10px;margin-bottom:20px}
-.ws-box.show{display:flex}
-.ws-d{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
-.ws-addr{font-family:monospace;font-size:14px;color:var(--accent);font-weight:700}
-.step-title{font-size:20px;font-weight:900;margin-bottom:5px}
-.step-desc{font-size:14px;color:var(--muted);margin-bottom:16px}
-.w-btn{width:100%;border:none;border-radius:14px;padding:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;font-size:16px;font-weight:700;color:#fff;margin-bottom:10px}
-.w-btn:active{opacity:.8}
-.w-btn.mm{background:#f6851b}
-.w-btn.tw{background:#3375ff}
-.w-btn.wc{background:#3b99fc}
-.form-group{margin-bottom:16px}
-.form-label{font-size:15px;font-weight:700;color:var(--muted);margin-bottom:6px;display:block}
-.form-input{width:100%;padding:14px;background:var(--surface2);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:inherit}
-.form-input:focus{outline:none;border-color:var(--accent)}
-.reg-btn{width:100%;padding:17px;background:var(--accent);border:none;border-radius:12px;color:#000;font-size:18px;font-weight:700;cursor:pointer;margin-top:8px}
-.done-icon{font-size:52px;text-align:center;margin-bottom:16px}
-.done-title{font-size:22px;font-weight:900;text-align:center;margin-bottom:8px}
-.done-desc{font-size:15px;color:var(--muted);text-align:center;margin-bottom:24px}
-.enter-btn2{width:100%;padding:17px;background:var(--accent);border:none;border-radius:12px;color:#000;font-size:18px;font-weight:700;cursor:pointer}
+.wallet-box{width:100%;max-width:340px}
+.err-box{background:#fff0ee;border:2px solid var(--warn);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--warn);margin-bottom:16px;display:none}
+.load-box{text-align:center;padding:12px;font-size:14px;color:var(--muted);display:none}
+.w-btn{width:100%;display:flex;align-items:center;gap:16px;background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;text-align:left}
+.w-btn:active{opacity:.75}
+.w-btn.mm{border-color:#f6851b}
+.w-btn.tw{border-color:#3375ff}
+.w-btn.wc{border-color:#3b99fc}
+.w-btn-icon{font-size:30px;flex-shrink:0}
+.w-btn-name{font-size:17px;font-weight:700;color:var(--text)}
+.w-btn-desc{font-size:13px;color:var(--muted)}
+.w-btn-arr{margin-left:auto;font-size:18px;color:var(--muted)}
+.net-note{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);line-height:1.8}
 
-/* APP */
-.app{display:none;flex-direction:column;height:100vh}
-.app.show{display:flex}
-.header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0}
-.h-logo{display:flex;align-items:center}
-.h-wiz{font-size:12px;color:var(--accent);font-weight:700;margin-left:6px}
-.h-right{display:flex;align-items:center;gap:8px}
-.chain-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.store-badge{font-size:13px;color:var(--muted);font-weight:600;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stats-bar{display:flex;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0}
-.stat{flex:1;padding:12px 8px;text-align:center;border-right:1px solid var(--border)}
-.stat:last-child{border-right:none}
-.stat-label{font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.stat-val{font-size:18px;font-weight:900}
-.stat-val.g{color:var(--accent)}.stat-val.p{color:var(--purple)}.stat-val.go{color:var(--gold)}.stat-val.o{color:#f97316}
-.main{flex:1;display:flex;overflow:hidden}
-.left{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:2px solid var(--border)}
-.right{width:260px;display:flex;flex-direction:column;overflow:hidden}
-.tabs{display:flex;border-bottom:2px solid var(--border);flex-shrink:0}
-.tab{flex:1;padding:14px;border:none;background:transparent;color:var(--muted);font-size:15px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface)}
-.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-shrink:0}
-.sec-title{font-size:17px;font-weight:900}
-.btn-sm{padding:8px 14px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--muted);font-size:14px;font-weight:700;cursor:pointer}
-.cat-filter{display:flex;gap:6px;padding:6px 16px;overflow-x:auto;flex-shrink:0}
-.cat-filter::-webkit-scrollbar{display:none}
-.cf-btn{padding:7px 14px;border-radius:18px;border:2px solid var(--border);background:transparent;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
-.cf-btn.active{background:var(--accent);border-color:var(--accent);color:#000}
-.menu-grid{flex:1;overflow-y:auto;padding:8px 14px 24px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.menu-grid::-webkit-scrollbar{display:none}
-.mc{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;position:relative}
-.mc:active{opacity:.8}
-.mc.so{opacity:.4}
-.so-badge{position:absolute;top:8px;right:8px;background:var(--warn);color:#fff;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px}
-.mc-em{font-size:32px;margin-bottom:8px}
-.mc-nm{font-size:15px;font-weight:700;margin-bottom:2px}
-.mc-cat{font-size:12px;color:var(--muted);margin-bottom:6px}
-.mc-bot{display:flex;align-items:center;justify-content:space-between}
-.mc-pr{font-size:16px;font-weight:900}
-.mc-rw{font-size:12px;color:var(--purple);font-weight:700;background:var(--surface2);padding:2px 6px;border-radius:6px}
-.sales-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 12px}
-.ss{background:var(--surface2);border:2px solid var(--border);border-radius:12px;padding:14px;text-align:center}
-.ss-val{font-size:22px;font-weight:900;margin-bottom:3px}
-.ss-label{font-size:12px;color:var(--muted);font-weight:600}
-.tx-list{flex:1;overflow-y:auto;padding:0 16px 24px}
-.tx-list::-webkit-scrollbar{display:none}
-.tx-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-.tx-amt{font-size:18px;font-weight:900}
+/* ════════════════════
+   PAGE 2: 매장 등록
+════════════════════ */
+#pg-register{background:var(--bg);padding:52px 24px 40px}
+.reg-title{font-size:26px;font-weight:900;margin-bottom:6px}
+.reg-sub{font-size:14px;color:var(--muted);margin-bottom:32px}
+.connected-addr{display:flex;align-items:center;gap:8px;background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:28px}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.conn-addr{font-family:monospace;font-size:14px;font-weight:700;color:var(--accent)}
+.form-group{margin-bottom:18px}
+.form-label{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:7px;display:block}
+.form-input{width:100%;padding:14px 16px;background:var(--surface);border:2px solid var(--border);border-radius:12px;font-size:16px;color:var(--text);font-family:'Noto Sans KR',sans-serif}
+.form-input:focus{outline:none;border-color:var(--accent)}
+.form-select{width:100%;padding:14px 16px;background:var(--surface);border:2px solid var(--border);border-radius:12px;font-size:16px;color:var(--text);font-family:'Noto Sans KR',sans-serif;appearance:none}
+.reg-btn{width:100%;padding:17px;background:var(--accent);border:none;border-radius:14px;color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
+
+/* ════════════════════
+   APP 헤더
+════════════════════ */
+.app-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:50}
+.app-logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:22px;letter-spacing:-0.5px}
+.app-logo span{color:var(--accent)}
+.app-store{font-size:13px;color:var(--muted);font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:8px}
+.chain-live{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--accent);font-weight:700}
+.chain-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+
+/* ── 탭 바 ── */
+.tab-bar{display:flex;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0}
+.tab-btn{flex:1;padding:14px 8px;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;font-family:'Noto Sans KR',sans-serif;border-bottom:3px solid transparent;transition:all .15s}
+.tab-btn.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ════════════════════
+   PAGE 3: 주문 관리
+════════════════════ */
+#pg-orders{background:var(--bg)}
+.orders-body{flex:1;overflow-y:auto;padding:12px 16px 80px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-text{font-size:16px}
+
+.order-card{background:var(--surface);border:2px solid var(--border);border-radius:16px;margin-bottom:12px;overflow:hidden}
+.order-card.new-order{border-color:var(--accent)}
+.oc-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.oc-no{font-size:16px;font-weight:700}
+.oc-time{font-size:12px;color:var(--muted)}
+.oc-status{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px}
+.oc-status.new{background:#e8faf2;color:var(--accent)}
+.oc-status.making{background:#fff8e1;color:#f59e0b}
+.oc-status.done{background:#f0f0f0;color:var(--muted)}
+.oc-items{padding:12px 16px;border-bottom:1px solid var(--border)}
+.oc-item-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.oc-item-row:last-child{margin-bottom:0}
+.oc-item-name{color:var(--muted)}
+.oc-item-price{font-weight:700}
+.oc-foot{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+.oc-total{font-size:18px;font-weight:900}
+.oc-btns{display:flex;gap:8px}
+.oc-btn{padding:9px 16px;border:2px solid var(--border);background:transparent;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;color:var(--text)}
+.oc-btn.accept{background:var(--accent);border-color:var(--accent);color:#fff}
+.oc-btn.complete{background:var(--text);border-color:var(--text);color:#fff}
+
+/* ════════════════════
+   PAGE 4: 메뉴 관리
+════════════════════ */
+#pg-menus{background:var(--bg)}
+.menus-body{flex:1;overflow-y:auto;padding:12px 16px 100px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:4px}
+.section-title{font-size:17px;font-weight:900}
+.add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif}
+
+.menu-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.mc-emoji{font-size:28px;width:50px;height:50px;background:var(--bg);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mc-info{flex:1;min-width:0}
+.mc-name{font-size:16px;font-weight:700;margin-bottom:2px}
+.mc-cat{font-size:13px;color:var(--muted);margin-bottom:4px}
+.mc-price{font-size:15px;font-weight:900}
+.mc-rw{font-size:12px;color:var(--accent);font-weight:700;margin-left:6px}
+.mc-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.mc-toggle{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;border:2px solid var(--border);background:transparent;color:var(--text)}
+.mc-toggle.soldout{background:#fff0ee;border-color:var(--warn);color:var(--warn)}
+.mc-del{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;border:2px solid var(--border);background:transparent;color:var(--muted)}
+
+/* 메뉴 추가 모달 */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end}
+.modal-bg.on{display:flex}
+.modal{background:var(--surface);width:100%;max-width:430px;margin:0 auto;border-radius:22px 22px 0 0;padding:24px 20px 40px;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 20px}
+.modal-title{font-size:20px;font-weight:900;margin-bottom:20px}
+.modal-form-group{margin-bottom:14px}
+.modal-label{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px;display:block}
+.modal-input{width:100%;padding:13px 14px;background:var(--bg);border:2px solid var(--border);border-radius:10px;font-size:15px;color:var(--text);font-family:'Noto Sans KR',sans-serif}
+.modal-input:focus{outline:none;border-color:var(--accent)}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-save{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
+.modal-cancel{width:100%;padding:13px;background:transparent;border:2px solid var(--border);border-radius:12px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
+
+/* ════════════════════
+   PAGE 5: 매출 통계
+════════════════════ */
+#pg-stats{background:var(--bg)}
+.stats-body{flex:1;overflow-y:auto;padding:12px 16px 80px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px}
+.stat-label{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-val{font-size:24px;font-weight:900}
+.stat-val.green{color:var(--accent)}
+.stat-val.gold{color:var(--gold)}
+.stat-val.purple{color:var(--purple)}
+
+.tx-section{background:var(--surface);border:2px solid var(--border);border-radius:14px;overflow:hidden}
+.tx-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700}
+.tx-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+.tx-row:last-child{border-bottom:none}
+.tx-left{}
+.tx-items{font-size:14px;color:var(--muted);margin-bottom:2px}
 .tx-time{font-size:12px;color:var(--muted)}
-.r-header{padding:14px 16px;border-bottom:2px solid var(--border);flex-shrink:0}
-.r-title{font-size:17px;font-weight:900}
-.orders-list{flex:1;overflow-y:auto;padding:8px 12px}
-.orders-list::-webkit-scrollbar{display:none}
-.oc{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px}
-.oc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.oc-no{font-size:15px;font-weight:700}
-.oc-st{font-size:12px;font-weight:700;padding:3px 9px;border-radius:8px}
-.oc-st.new{background:var(--accent);color:#000}
-.oc-st.making{background:#f59e0b;color:#000}
-.oc-st.done{background:var(--surface2);color:var(--muted)}
-.oc-items{font-size:14px;color:var(--muted);margin-bottom:8px}
-.oc-total{font-size:17px;font-weight:900;margin-bottom:8px}
-.oc-btns{display:flex;gap:6px}
-.oc-btn{flex:1;padding:9px;border:2px solid var(--border);background:transparent;color:var(--text);font-size:13px;font-weight:700;border-radius:8px;cursor:pointer}
-.oc-btn.acc{background:var(--accent);border-color:var(--accent);color:#000}
-.chain-log{flex-shrink:0;border-top:2px solid var(--border);padding:8px 12px;max-height:120px;overflow-y:auto}
-.chain-log::-webkit-scrollbar{display:none}
-.cl-title{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
-.cl-item{font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid var(--border)}
-.empty{text-align:center;padding:32px 16px;color:var(--muted)}
-.empty-icon{font-size:36px;margin-bottom:8px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:12px 22px;font-size:15px;font-weight:700;color:var(--text);display:none;z-index:999;white-space:nowrap}
-.toast.show{display:block}
+.tx-amount{font-size:17px;font-weight:900}
 </style>
 </head>
-<body class="light">
+<body>
 
-<!-- 우상단 설정 버튼 (항상 고정) -->
-<div style="position:fixed;top:12px;right:12px;z-index:1500;">
-  <div class="s-wrap">
-    <button class="s-btn" id="authSettingsBtn" onclick="toggleAuthSettings()">
-      <span id="authLangFlag">🇰🇷</span>
-      <span id="authLangName">KR</span>
-      <span style="font-size:9px;color:var(--muted)">▲</span>
+<!-- ══════════════════════════
+     PAGE 1: 지갑 연결
+══════════════════════════ -->
+<div class="page on" id="pg-wallet">
+  <div class="logo">Wiz<span>POS</span></div>
+  <div class="tagline">더 편한 글로벌 올인원 포스</div>
+  <div class="wiz-badge">
+    <div class="wiz-dot"></div>
+    <span class="wiz-name">WizChain</span>
+    <span class="wiz-by">by WizClass</span>
+  </div>
+  <div class="wallet-box">
+    <div class="err-box" id="errBox"></div>
+    <div class="load-box" id="loadBox">연결 중...</div>
+    <button class="w-btn mm" onclick="connectMM()">
+      <span class="w-btn-icon">🦊</span>
+      <div>
+        <div class="w-btn-name">MetaMask</div>
+        <div class="w-btn-desc">브라우저 익스텐션 / 모바일 앱</div>
+      </div>
+      <span class="w-btn-arr">→</span>
     </button>
-    <div class="s-menu" id="authSettingsMenu">
-      <div class="s-sec">언어</div>
-      <div class="s-item" onclick="setLang('ko')">🇰🇷 한국어<span class="s-chk" id="achk-ko">✓</span></div>
-      <div class="s-item" onclick="setLang('en')">🇺🇸 English<span class="s-chk" id="achk-en" style="display:none">✓</span></div>
-      <div class="s-item" onclick="setLang('zh')">🇨🇳 中文<span class="s-chk" id="achk-zh" style="display:none">✓</span></div>
-      <div class="s-div"></div>
-      <div class="s-sec">테마</div>
-      <div class="s-item" onclick="setTheme('light')">☀️ 라이트<span class="s-chk" id="achk-light">✓</span></div>
-      <div class="s-item" onclick="setTheme('dark')">🌙 다크<span class="s-chk" id="achk-dark" style="display:none">✓</span></div>
-    </div>
+    <button class="w-btn tw" onclick="connectTW()">
+      <span class="w-btn-icon">🛡️</span>
+      <div>
+        <div class="w-btn-name">Trust Wallet</div>
+        <div class="w-btn-desc">모바일 앱으로 연결</div>
+      </div>
+      <span class="w-btn-arr">→</span>
+    </button>
+    <button class="w-btn wc" onclick="connectWC()">
+      <span class="w-btn-icon">🔗</span>
+      <div>
+        <div class="w-btn-name">WalletConnect</div>
+        <div class="w-btn-desc">300+ 지갑 QR 연결</div>
+      </div>
+      <span class="w-btn-arr">→</span>
+    </button>
+    <div class="net-note">WizChain (Chain ID: 10243)<br>연결 시 자동으로 네트워크 전환</div>
   </div>
 </div>
-<div class="overlay-bg" id="authSettingsOverlay" onclick="closeAuthSettings()"></div>
 
-<!-- AUTH -->
-<div class="auth" id="auth">
-  <div class="auth-card">
+<!-- ══════════════════════════
+     PAGE 2: 매장 등록
+══════════════════════════ -->
+<div class="page" id="pg-register">
+  <div class="reg-title">매장 등록</div>
+  <div class="reg-sub">처음 이용하시나요? 매장 정보를 입력해주세요.</div>
+  <div class="connected-addr">
+    <div class="conn-dot"></div>
+    <span class="conn-addr" id="connAddr">0x...</span>
+  </div>
+  <div class="form-group">
+    <label class="form-label">매장명 *</label>
+    <input class="form-input" id="regName" placeholder="예: 위즈카페 강남점">
+  </div>
+  <div class="form-group">
+    <label class="form-label">카테고리</label>
+    <select class="form-select" id="regCat">
+      <option>☕ 카페</option>
+      <option>🍖 한식</option>
+      <option>🍕 양식</option>
+      <option>🥐 베이커리</option>
+      <option>🍜 면류</option>
+      <option>🍱 분식</option>
+      <option>🛒 편의점</option>
+      <option>기타</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">주소</label>
+    <input class="form-input" id="regAddr" placeholder="예: 서울 강남구 테헤란로 123">
+  </div>
+  <button class="reg-btn" onclick="registerStore()">매장 등록하기 →</button>
+</div>
 
-    <!-- 로고 (고객앱과 동일한 구조) -->
-    <div style="font-family:'Outfit',sans-serif;font-weight:900;font-size:52px;letter-spacing:-1px;color:var(--text);line-height:1;margin-bottom:8px;">Wiz<span style="color:var(--accent);">POS</span></div>
-    <div style="font-size:13px;color:var(--muted);letter-spacing:3px;margin-bottom:16px;">더 편한 글로벌 올인원 포스</div>
-    <div class="auth-wiz" style="margin-bottom:40px;">
-      <div class="wiz-dot"></div>
-      <span class="wiz-nm">WizChain</span>
-      <span class="wiz-by">by WizClass</span>
+<!-- ══════════════════════════
+     PAGE 3: 주문 관리
+══════════════════════════ -->
+<div class="page" id="pg-orders">
+  <div class="app-header">
+    <div>
+      <div class="app-logo">Wiz<span>POS</span></div>
+      <div class="app-store" id="storeName">매장명</div>
     </div>
-
-    <!-- 스텝 진행 표시 (등록/완료 단계에서만) -->
-    <div class="auth-steps" style="display:none;margin-bottom:24px;" id="authSteps">
-      <div class="step-dot active" id="dot0"></div>
-      <div class="step-dot" id="dot1"></div>
-      <div class="step-dot" id="dot2"></div>
+    <div class="header-right">
+      <div class="chain-live">
+        <div class="chain-dot"></div>
+        WizChain
+      </div>
     </div>
-
-    <div class="auth-err" id="authErr"></div>
-    <div class="auth-loading" id="authLoad">처리 중...</div>
-
-    <!-- 고객앱 wallet-box와 동일한 너비 컨테이너 -->
-    <div style="width:100%;max-width:340px;">
-
-      <!-- STEP 0: 지갑 연결 -->
-      <div id="step0">
-        <div class="ws-box" id="wsBox">
-          <div class="ws-d"></div>
-          <div class="ws-addr" id="wsAddr">-</div>
-        </div>
-        <button onclick="authConnect('metamask')" style="width:100%;display:flex;align-items:center;gap:16px;background:var(--surface);border:2px solid #f6851b;border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;">
-          <span style="font-size:30px;">🦊</span>
-          <div style="text-align:left;">
-            <div style="font-size:18px;font-weight:700;color:var(--text);">MetaMask</div>
-            <div style="font-size:13px;color:var(--muted);" data-i18n="mm-desc">브라우저 익스텐션 / 모바일 앱</div>
-          </div>
-          <span style="margin-left:auto;font-size:20px;color:var(--muted);">→</span>
-        </button>
-        <button onclick="authConnect('trustwallet')" style="width:100%;display:flex;align-items:center;gap:16px;background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;">
-          <span style="font-size:30px;">🛡️</span>
-          <div style="text-align:left;">
-            <div style="font-size:18px;font-weight:700;color:var(--text);">Trust Wallet</div>
-            <div style="font-size:13px;color:var(--muted);" data-i18n="tw-desc">모바일 QR 연결</div>
-          </div>
-          <span style="margin-left:auto;font-size:20px;color:var(--muted);">→</span>
-        </button>
-        <button onclick="authConnect('walletconnect')" style="width:100%;display:flex;align-items:center;gap:16px;background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px;cursor:pointer;">
-          <span style="font-size:30px;">🔗</span>
-          <div style="text-align:left;">
-            <div style="font-size:18px;font-weight:700;color:var(--text);">WalletConnect</div>
-            <div style="font-size:13px;color:var(--muted);" data-i18n="wc-desc">300+ 지갑 QR 연결</div>
-          </div>
-          <span style="margin-left:auto;font-size:20px;color:var(--muted);">→</span>
-        </button>
-        <div style="text-align:center;font-size:13px;color:var(--muted);line-height:1.8;">WizChain (Chain ID: 10243)<br>연결 시 자동으로 네트워크 전환</div>
-      </div>
-
-      <!-- STEP 1: 매장 등록 -->
-      <div id="step1" style="display:none;width:100%;">
-        <div class="step-title">매장 등록</div>
-        <div class="step-desc">처음 이용하시나요? 매장 정보를 등록해주세요.</div>
-        <div class="form-group">
-          <label class="form-label">매장명</label>
-          <input class="form-input" id="regName" placeholder="예: 위즈카페 강남점">
-        </div>
-        <div class="form-group">
-          <label class="form-label">카테고리</label>
-          <input class="form-input" id="regCat" placeholder="예: ☕ 카페">
-        </div>
-        <div class="form-group">
-          <label class="form-label">주소</label>
-          <input class="form-input" id="regAddr" placeholder="예: 서울 강남구 테헤란로 123">
-        </div>
-        <button class="reg-btn" onclick="registerStore()">매장 등록하기</button>
-      </div>
-
-      <!-- STEP 2: 완료 -->
-      <div id="step2" style="display:none;text-align:center;">
-        <div style="font-size:52px;margin-bottom:16px;">✅</div>
-        <div class="done-title">연결 완료!</div>
-        <div class="done-desc" id="doneDesc">매장이 확인되었습니다.</div>
-        <button class="enter-btn2" onclick="enterDashboard()">대시보드 입장 →</button>
-      </div>
-
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn on" onclick="switchTab('orders',this)">📋 주문</button>
+    <button class="tab-btn" onclick="switchTab('menus',this)">🍽 메뉴</button>
+    <button class="tab-btn" onclick="switchTab('stats',this)">📊 매출</button>
+  </div>
+  <div class="orders-body" id="ordersBody">
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">아직 주문이 없습니다</div>
     </div>
   </div>
 </div>
 
-<!-- APP -->
-<div class="app" id="app">
-  <div class="header">
-    <div style="display:flex;align-items:center;">
-      <div class="h-logo"><span style="font-family:'Outfit',sans-serif;font-weight:900;font-size:22px;letter-spacing:-0.5px;color:var(--text);">Wiz<span style="color:var(--accent);">POS</span></span></div>
-      <span class="h-wiz">WizChain</span>
+<!-- ══════════════════════════
+     PAGE 4: 메뉴 관리
+══════════════════════════ -->
+<div class="page" id="pg-menus">
+  <div class="app-header">
+    <div>
+      <div class="app-logo">Wiz<span>POS</span></div>
+      <div class="app-store" id="storeNameM">매장명</div>
     </div>
-    <div class="h-right">
-      <div class="chain-dot"></div>
-      <div class="store-badge" id="storeBadge">연결 중...</div>
-      <div class="s-wrap">
-        <button class="s-btn" id="sBtn" onclick="toggleSettings()">
-          <span id="langFlag">🇰🇷</span>
-          <span id="langName">KR</span>
-          <span style="font-size:9px;color:var(--muted)">▲</span>
-        </button>
-        <div class="s-menu" id="sMenu">
-          <div class="s-sec">언어</div>
-          <div class="s-item" onclick="setLang('ko')">🇰🇷 한국어<span class="s-chk" id="chk-ko">✓</span></div>
-          <div class="s-item" onclick="setLang('en')">🇺🇸 English<span class="s-chk" id="chk-en" style="display:none">✓</span></div>
-          <div class="s-item" onclick="setLang('zh')">🇨🇳 中文<span class="s-chk" id="chk-zh" style="display:none">✓</span></div>
-          <div class="s-div"></div>
-          <div class="s-sec">테마</div>
-          <div class="s-item" onclick="setTheme('light')">☀️ 라이트<span class="s-chk" id="chk-light">✓</span></div>
-          <div class="s-item" onclick="setTheme('dark')">🌙 다크<span class="s-chk" id="chk-dark" style="display:none">✓</span></div>
-          <div class="s-div"></div>
-          <div class="s-item red" onclick="logout()">⏏ <span data-i18n="logout">로그아웃</span></div>
-        </div>
+    <div class="header-right">
+      <div class="chain-live">
+        <div class="chain-dot"></div>
+        WizChain
       </div>
     </div>
   </div>
-  <div class="overlay-bg" id="sOverlay" onclick="closeSettings()"></div>
-
-  <div class="stats-bar">
-    <div class="stat"><div class="stat-label" data-i18n="today-sales">오늘 매출</div><div class="stat-val g" id="st-sales">₩0</div></div>
-    <div class="stat"><div class="stat-label" data-i18n="order-count">주문</div><div class="stat-val p" id="st-orders">0</div></div>
-    <div class="stat"><div class="stat-label" data-i18n="issued-token">OZ 지급</div><div class="stat-val go" id="st-oz">0</div></div>
-    <div class="stat"><div class="stat-label" data-i18n="menu-count">메뉴</div><div class="stat-val o" id="st-menus">0</div></div>
+  <div class="tab-bar">
+    <button class="tab-btn" onclick="switchTab('orders',this)">📋 주문</button>
+    <button class="tab-btn on" onclick="switchTab('menus',this)">🍽 메뉴</button>
+    <button class="tab-btn" onclick="switchTab('stats',this)">📊 매출</button>
   </div>
+  <div class="menus-body">
+    <div class="section-header">
+      <div class="section-title" id="menuCount">메뉴 0개</div>
+      <button class="add-btn" onclick="openAddMenu()">+ 메뉴 추가</button>
+    </div>
+    <div id="menuCards"></div>
+  </div>
+</div>
 
-  <div class="main">
-    <div class="left">
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab('menu',this)">🍽 <span data-i18n="menu-tab">메뉴</span></button>
-        <button class="tab" onclick="switchTab('sales',this)">📊 <span data-i18n="sales-tab">매출</span></button>
-      </div>
-
-      <!-- 메뉴 탭 -->
-      <div id="tabMenu" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
-        <div class="sec-hdr">
-          <div class="sec-title" data-i18n="menu-status">메뉴 현황</div>
-          <button class="btn-sm" onclick="syncMenus()">⟳ <span data-i18n="sync-sheets">동기화</span></button>
-        </div>
-        <div class="cat-filter" id="catFilter">
-          <button class="cf-btn active" onclick="filterCat('all',this)" data-i18n="all">전체</button>
-        </div>
-        <div class="menu-grid" id="menuGrid">
-          <div class="empty" style="grid-column:1/-1"><div class="empty-icon">🍽</div>메뉴가 없습니다</div>
-        </div>
-      </div>
-
-      <!-- 매출 탭 -->
-      <div id="tabSales" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-        <div class="sec-hdr">
-          <div class="sec-title" data-i18n="onchain-sales">온체인 매출</div>
-          <button class="btn-sm" onclick="loadSales()">⟳ <span data-i18n="refresh">갱신</span></button>
-        </div>
-        <div class="sales-sum">
-          <div class="ss"><div class="ss-val" id="ss-total">-</div><div class="ss-label">총 WUSD</div></div>
-          <div class="ss"><div class="ss-val" id="ss-cnt">-</div><div class="ss-label" data-i18n="total-orders">총 주문</div></div>
-          <div class="ss"><div class="ss-val" id="ss-oz">-</div><div class="ss-label">총 OZ</div></div>
-          <div class="ss"><div class="ss-val" id="ss-bal">-</div><div class="ss-label">WUSD 잔액</div></div>
-        </div>
-        <div class="tx-list" id="txList">
-          <div class="empty"><div class="empty-icon">⛓</div>서버 연결 후 표시됩니다</div>
-        </div>
+<!-- ══════════════════════════
+     PAGE 5: 매출 통계
+══════════════════════════ -->
+<div class="page" id="pg-stats">
+  <div class="app-header">
+    <div>
+      <div class="app-logo">Wiz<span>POS</span></div>
+      <div class="app-store" id="storeNameS">매장명</div>
+    </div>
+    <div class="header-right">
+      <div class="chain-live">
+        <div class="chain-dot"></div>
+        WizChain
       </div>
     </div>
-
-    <!-- 주문 패널 -->
-    <div class="right">
-      <div class="r-header">
-        <div class="r-title" data-i18n="orders-tab">주문 현황</div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn" onclick="switchTab('orders',this)">📋 주문</button>
+    <button class="tab-btn" onclick="switchTab('menus',this)">🍽 메뉴</button>
+    <button class="tab-btn on" onclick="switchTab('stats',this)">📊 매출</button>
+  </div>
+  <div class="stats-body">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">오늘 매출</div>
+        <div class="stat-val green" id="statSales">₩0</div>
       </div>
-      <div class="orders-list" id="ordersList">
-        <div class="empty"><div class="empty-icon">📭</div><span data-i18n="no-orders">주문이 없습니다</span></div>
+      <div class="stat-card">
+        <div class="stat-label">주문 건수</div>
+        <div class="stat-val purple" id="statCount">0건</div>
       </div>
-      <div class="chain-log">
-        <div class="cl-title">⛓ Chain Log</div>
-        <div id="chainLog"></div>
+      <div class="stat-card">
+        <div class="stat-label">OZ 지급</div>
+        <div class="stat-val gold" id="statOZ">0 OZ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">활성 메뉴</div>
+        <div class="stat-val" id="statMenus">0개</div>
+      </div>
+    </div>
+    <div class="tx-section">
+      <div class="tx-header">주문 내역</div>
+      <div id="txList">
+        <div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">아직 주문 내역이 없습니다</div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- ══════════════════════════
+     메뉴 추가 모달
+══════════════════════════ -->
+<div class="modal-bg" id="addMenuModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">메뉴 추가</div>
+    <div class="modal-form-group">
+      <label class="modal-label">메뉴명 *</label>
+      <input class="modal-input" id="mName" placeholder="예: 아메리카노">
+    </div>
+    <div class="modal-row">
+      <div class="modal-form-group">
+        <label class="modal-label">카테고리</label>
+        <input class="modal-input" id="mCat" placeholder="예: 커피">
+      </div>
+      <div class="modal-form-group">
+        <label class="modal-label">이모지</label>
+        <input class="modal-input" id="mEmoji" placeholder="☕" style="font-size:20px;text-align:center">
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-form-group">
+        <label class="modal-label">가격 (원) *</label>
+        <input class="modal-input" id="mPrice" type="number" placeholder="4500">
+      </div>
+      <div class="modal-form-group">
+        <label class="modal-label">OZ 배율</label>
+        <input class="modal-input" id="mReward" type="number" placeholder="1" step="0.5">
+      </div>
+    </div>
+    <div class="modal-form-group">
+      <label class="modal-label">설명</label>
+      <input class="modal-input" id="mDesc" placeholder="예: 진한 에스프레소">
+    </div>
+    <button class="modal-save" onclick="saveMenu()">저장</button>
+    <button class="modal-cancel" onclick="closeAddMenu()">취소</button>
+  </div>
+</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <script>
-// ethers 로드 실패 시 fallback
-if(typeof ethers==='undefined'){
-  document.write('<script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"><\/script>');
-}
-</script>
-<script>
-const API_BASE='';  // 서버 주소 (없으면 샘플 데이터 사용)
-const WIZCHAIN={chainId:10243,chainIdHex:'0x27F3',chainName:'WizChain',rpcUrl:'https://rpc.wizclass.net',symbol:'WCN'};
+/* ── 상태 ── */
+let walletAddr = '';
+let store = null;       // { name, cat, addr, wallet }
+let menus = [];         // [{ id, name, cat, emoji, price, reward, desc, soldout }]
+let orders = [];        // [{ id, no, items, total, oz, status, time }]
+let nextMenuId = 1;
+let nextOrderId = 1;
 
-let authAddr='',authProvider=null,ownerStore=null,ownerMenus=[],ownerOrders=[];
-let currentFilter='all',currentMainTab='menu';
-let theme=localStorage.getItem('w3pos_theme')||'light';
-let lang=localStorage.getItem('w3pos_lang')||'ko';
-
-// ── 번역 ──
-const LANGMETA={ko:{flag:'🇰🇷',name:'KR'},en:{flag:'🇺🇸',name:'EN'},zh:{flag:'🇨🇳',name:'CN'}};
-const T={
-  ko:{'wallet-title':'지갑 연결','wallet-desc':'지갑을 연결하면 내 매장 정보를 자동으로 불러옵니다.','today-sales':'오늘 매출','order-count':'주문','issued-token':'OZ 지급','menu-count':'메뉴','menu-tab':'메뉴','sales-tab':'매출','menu-status':'메뉴 현황','sync-sheets':'동기화','all':'전체','onchain-sales':'온체인 매출','refresh':'갱신','total-orders':'총 주문','orders-tab':'주문 현황','no-orders':'주문이 없습니다','logout':'로그아웃'},
-  en:{'wallet-title':'Connect Wallet','wallet-desc':'Connect wallet to manage your store.','today-sales':"Today's Sales",'order-count':'Orders','issued-token':'OZ Issued','menu-count':'Menu','menu-tab':'Menu','sales-tab':'Sales','menu-status':'Menu Status','sync-sheets':'Sync','all':'All','onchain-sales':'On-chain Sales','refresh':'Refresh','total-orders':'Total Orders','orders-tab':'Orders','no-orders':'No orders','logout':'Logout'},
-  zh:{'wallet-title':'连接钱包','wallet-desc':'连接钱包以管理您的店铺。','today-sales':'今日销售','order-count':'订单','issued-token':'OZ发放','menu-count':'菜单','menu-tab':'菜单','sales-tab':'销售','menu-status':'菜单状态','sync-sheets':'同步','all':'全部','onchain-sales':'链上销售','refresh':'刷新','total-orders':'总订单','orders-tab':'订单','no-orders':'暂无订单','logout':'退出登录'}
-};
-function applyLang(){
-  const t=T[lang]||T.ko;
-  document.querySelectorAll('[data-i18n]').forEach(el=>{ if(t[el.dataset.i18n]) el.textContent=t[el.dataset.i18n]; });
-  const m=LANGMETA[lang];
-  // 대시보드 설정 버튼
-  document.querySelectorAll('#langFlag').forEach(el=>el.textContent=m.flag);
-  document.querySelectorAll('#langName').forEach(el=>el.textContent=m.name);
-  // Auth 설정 버튼
-  const af=document.getElementById('authLangFlag'), an=document.getElementById('authLangName');
-  if(af) af.textContent=m.flag;
-  if(an) an.textContent=m.name;
-  // 체크마크 (대시보드)
-  ['ko','en','zh'].forEach(l=>{ const el=document.getElementById('chk-'+l); if(el) el.style.display=l===lang?'inline':'none'; });
-  // 체크마크 (Auth)
-  ['ko','en','zh'].forEach(l=>{ const el=document.getElementById('achk-'+l); if(el) el.style.display=l===lang?'inline':'none'; });
-  localStorage.setItem('w3pos_lang',lang);
-}
-function setLang(l){ lang=l; applyLang(); closeSettings(); closeAuthSettings(); }
-
-// ── 테마 ──
-function applyTheme(){
-  document.body.className=theme;
-  // 대시보드 체크마크
-  const cl=document.getElementById('chk-light'),cd=document.getElementById('chk-dark');
-  if(cl) cl.style.display=theme==='light'?'inline':'none';
-  if(cd) cd.style.display=theme==='dark'?'inline':'none';
-  // Auth 체크마크
-  const acl=document.getElementById('achk-light'),acd=document.getElementById('achk-dark');
-  if(acl) acl.style.display=theme==='light'?'inline':'none';
-  if(acd) acd.style.display=theme==='dark'?'inline':'none';
-  localStorage.setItem('w3pos_theme',theme);
-}
-function setTheme(t){ theme=t; applyTheme(); closeSettings(); closeAuthSettings(); }
-
-// ── 설정 메뉴 ──
-function toggleAuthSettings(){
-  const m=document.getElementById('authSettingsMenu'), o=document.getElementById('authSettingsOverlay');
-  const open=m.classList.toggle('open');
-  o.classList.toggle('show',open);
-}
-function closeAuthSettings(){
-  document.getElementById('authSettingsMenu').classList.remove('open');
-  document.getElementById('authSettingsOverlay').classList.remove('show');
-}
-function toggleSettings(){
-  const m=document.getElementById('sMenu'),o=document.getElementById('sOverlay');
-  const open=m.classList.toggle('open');
-  o.classList.toggle('show',open);
-}
-function closeSettings(){
-  document.getElementById('sMenu').classList.remove('open');
-  document.getElementById('sOverlay').classList.remove('show');
+/* ── 페이지 전환 ── */
+function goPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0, 0);
 }
 
-// ── Toast ──
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function switchTab(tab, el) {
+  const map = { orders:'pg-orders', menus:'pg-menus', stats:'pg-stats' };
+  // 탭 버튼 active 동기화
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  // 해당 페이지의 같은 탭 버튼들도 모두 off
+  el.classList.add('on');
+  // 같은 인덱스 위치의 다른 페이지 탭도 on 처리
+  const idx = Array.from(el.parentElement.children).indexOf(el);
+  document.querySelectorAll('.tab-bar').forEach(bar => {
+    bar.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('on', i===idx));
+  });
+  if (tab === 'stats') updateStats();
+  if (tab === 'menus') renderMenuCards();
+  if (tab === 'orders') renderOrders();
+  goPage(map[tab]);
+}
 
-// ── Auth 스텝 ──
-function setStep(n){
-  // 스텝 1,2로 이동 시 dots 표시
-  const stepsEl = document.getElementById('authSteps');
-  if(stepsEl) stepsEl.style.display = n > 0 ? 'flex' : 'none';
-  [0,1,2].forEach(i=>{
-    const dot=document.getElementById('dot'+i);
-    dot.className='step-dot'+(i<n?' done':i===n?' active':'');
-    document.getElementById('step'+i).style.display=i===n?'block':'none';
+/* ── 에러/로딩 ── */
+function showErr(msg) { const e=document.getElementById('errBox'); e.textContent=msg; e.style.display='block'; }
+function hideErr() { document.getElementById('errBox').style.display='none'; }
+function showLoad(v) { document.getElementById('loadBox').style.display=v?'block':'none'; }
+
+/* ── ethereum 감지 ── */
+function detectEthereum() {
+  return new Promise(resolve => {
+    if (window.ethereum) return resolve(window.ethereum);
+    if (window.web3?.currentProvider) return resolve(window.web3.currentProvider);
+    let n = 0;
+    const t = setInterval(() => {
+      if (window.ethereum) { clearInterval(t); resolve(window.ethereum); }
+      else if (++n > 30) { clearInterval(t); resolve(null); }
+    }, 100);
   });
 }
 
-// ── 에러/로딩 ──
-function showErr(msg){ const e=document.getElementById('authErr'); e.textContent=msg; e.classList.add('show'); }
-function hideErr(){ document.getElementById('authErr').classList.remove('show'); }
-function showLoad(v){ document.getElementById('authLoad').classList.toggle('show',v); }
-
-// ── 지갑 연결 ──
-// ethereum 감지 (inject 지연 대응)
-// ethereum 감지 (최대 3초 대기)
-function getEthereum(){
-  return new Promise(resolve=>{
-    if(window.ethereum) return resolve(window.ethereum);
-    if(window.web3?.currentProvider) return resolve(window.web3.currentProvider);
-    let tries=0;
-    const t=setInterval(()=>{
-      if(window.ethereum){clearInterval(t);resolve(window.ethereum);}
-      else if(window.web3?.currentProvider){clearInterval(t);resolve(window.web3.currentProvider);}
-      else if(++tries>30){clearInterval(t);resolve(null);}
-    },100);
-  });
-}
-
-async function authConnect(type){
+/* ── 지갑 연결 공통 ── */
+async function connectWallet(provider) {
   hideErr(); showLoad(true);
-  try{
-    // ethers 확인
-    if(typeof ethers==='undefined') throw new Error('ethers 라이브러리 로드 실패. 새로고침 후 다시 시도하세요.');
-
-    let provider = await getEthereum();
-
-    // 감지 실패 시 타입별 딥링크로 앱 직접 실행
-    if(!provider){
-      if(type==='trustwallet'){
-        window.location.href='https://link.trustwallet.com/open_url?coin_id=60&url='+encodeURIComponent(location.href);
-      }else{
-        // MetaMask 또는 WalletConnect → MetaMask 딥링크
-        window.location.href='https://metamask.app.link/dapp/'+location.host+location.pathname;
-      }
-      showLoad(false); return;
-    }
-
-    authProvider=new ethers.BrowserProvider(provider);
-    await authProvider.send('eth_requestAccounts',[]);
-    const signer=await authProvider.getSigner();
-    authAddr=await signer.getAddress();
-
-    // WizChain 네트워크 전환
-    try{
-      await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:WIZCHAIN.chainIdHex}]});
-    }catch(e){
-      if(e.code===4902||e.code===-32603){
-        await provider.request({method:'wallet_addEthereumChain',params:[{
-          chainId:WIZCHAIN.chainIdHex,chainName:WIZCHAIN.chainName,
-          nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},
-          rpcUrls:[WIZCHAIN.rpcUrl],blockExplorerUrls:['https://explorer.wizclass.net']
-        }]});
+  try {
+    if (typeof ethers === 'undefined') throw new Error('ethers 로드 실패. 새로고침하세요.');
+    const bp = new ethers.BrowserProvider(provider);
+    await bp.send('eth_requestAccounts', []);
+    const signer = await bp.getSigner();
+    walletAddr = await signer.getAddress();
+    // WizChain 전환
+    try {
+      await provider.request({ method:'wallet_switchEthereumChain', params:[{chainId:'0x27F3'}] });
+    } catch(e) {
+      if (e.code===4902 || e.code===-32603) {
+        try {
+          await provider.request({ method:'wallet_addEthereumChain', params:[{
+            chainId:'0x27F3', chainName:'WizChain',
+            nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},
+            rpcUrls:['https://rpc.wizclass.net']
+          }]});
+        } catch(_) {}
       }
     }
-
-    document.getElementById('wsAddr').textContent=authAddr.slice(0,6)+'...'+authAddr.slice(-4);
-    document.getElementById('wsBox').classList.add('show');
-
-    // 서버에서 매장 조회
-    try{
-      if(!API_BASE) throw new Error('no server');
-      const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),3000);
-      const r=await fetch(`${API_BASE}/api/stores`,{signal:ctrl.signal});
-      const d=await r.json();
-      const my=d.stores?.find(s=>s.wallet_address?.toLowerCase()===authAddr.toLowerCase());
-      if(my){ ownerStore=my; document.getElementById('doneDesc').textContent=`"${my.name}" 매장이 확인되었습니다.`; setStep(2); }
-      else setStep(1);
-    }catch{
-      ownerStore={id:0,name:'데모 매장',active:true};
-      document.getElementById('doneDesc').textContent='데모 모드로 진입합니다.';
-      setStep(2);
+    localStorage.setItem('wizpos_addr', walletAddr);
+    // 기존 매장 있으면 대시보드, 없으면 매장 등록
+    const savedStore = localStorage.getItem('wizpos_store');
+    if (savedStore) {
+      store = JSON.parse(savedStore);
+      menus = JSON.parse(localStorage.getItem('wizpos_menus') || '[]');
+      nextMenuId = menus.length ? Math.max(...menus.map(m=>m.id)) + 1 : 1;
+      enterDashboard();
+    } else {
+      document.getElementById('connAddr').textContent = walletAddr.slice(0,6)+'...'+walletAddr.slice(-4);
+      goPage('pg-register');
     }
-    localStorage.setItem('w3pos_owner',authAddr);
-
-  }catch(e){
-    if(e.code===4001) showErr('연결을 취소했습니다.');
-    else showErr('연결 실패: '+(e.message||String(e)));
+  } catch(e) {
+    if (e.code===4001) showErr('연결을 취소했습니다.');
+    else showErr('연결 실패: ' + (e.message || String(e)));
   }
-  finally{ showLoad(false); }
+  showLoad(false);
 }
 
-// ── 매장 등록 ──
-async function registerStore(){
-  const name=document.getElementById('regName').value.trim();
-  if(!name){ alert('매장명을 입력해주세요'); return; }
-  ownerStore={id:0,name,active:true};
-  document.getElementById('doneDesc').textContent=`"${name}" 매장이 등록되었습니다.`;
-  setStep(2);
+async function connectMM() {
+  hideErr();
+  const p = await detectEthereum();
+  if (!p) { window.location.href = 'https://metamask.app.link/dapp/' + location.host + location.pathname; return; }
+  await connectWallet(p);
+}
+async function connectTW() {
+  hideErr();
+  const p = await detectEthereum();
+  if (!p) { window.location.href = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(location.href); return; }
+  await connectWallet(p);
+}
+async function connectWC() {
+  hideErr();
+  const p = await detectEthereum();
+  if (!p) { window.location.href = 'https://metamask.app.link/dapp/' + location.host + location.pathname; return; }
+  await connectWallet(p);
 }
 
-// ── 대시보드 입장 ──
-function enterDashboard(){
-  document.getElementById('auth').classList.add('hidden');
-  document.getElementById('app').classList.add('show');
-  document.getElementById('storeBadge').textContent=ownerStore?.name||'내 매장';
-  addLog('대시보드 진입: '+( ownerStore?.name||'데모 매장'));
-  loadSampleMenus();
-  renderMenus();
+/* ── 매장 등록 ── */
+function registerStore() {
+  const name = document.getElementById('regName').value.trim();
+  if (!name) { alert('매장명을 입력해주세요.'); return; }
+  store = {
+    name,
+    cat: document.getElementById('regCat').value,
+    addr: document.getElementById('regAddr').value.trim(),
+    wallet: walletAddr
+  };
+  localStorage.setItem('wizpos_store', JSON.stringify(store));
+  enterDashboard();
+}
+
+/* ── 대시보드 진입 ── */
+function enterDashboard() {
+  document.querySelectorAll('.app-store').forEach(el => el.textContent = store.name);
+  renderOrders();
+  goPage('pg-orders');
+}
+
+/* ── 주문 렌더 ── */
+function renderOrders() {
+  const body = document.getElementById('ordersBody');
+  if (!orders.length) {
+    body.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">아직 주문이 없습니다</div></div>`;
+    return;
+  }
+  // 최신순
+  const sorted = [...orders].reverse();
+  body.innerHTML = sorted.map(o => `
+    <div class="order-card${o.status==='new'?' new-order':''}">
+      <div class="oc-head">
+        <div>
+          <div class="oc-no">#${o.no}</div>
+          <div class="oc-time">${o.time}</div>
+        </div>
+        <span class="oc-status ${o.status}">${statusLabel(o.status)}</span>
+      </div>
+      <div class="oc-items">
+        ${o.items.map(i=>`
+          <div class="oc-item-row">
+            <span class="oc-item-name">${i.emoji} ${i.name} ×${i.qty}</span>
+            <span class="oc-item-price">₩${(i.price*i.qty).toLocaleString()}</span>
+          </div>`).join('')}
+      </div>
+      <div class="oc-foot">
+        <div class="oc-total">₩${o.total.toLocaleString()}</div>
+        <div class="oc-btns">
+          ${o.status==='new' ? `<button class="oc-btn accept" onclick="setStatus(${o.id},'making')">수락</button>` : ''}
+          ${o.status==='making' ? `<button class="oc-btn complete" onclick="setStatus(${o.id},'done')">완료</button>` : ''}
+          ${o.status==='done' ? `<span style="font-size:13px;color:var(--muted)">완료됨 ✓</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function statusLabel(s) {
+  return {new:'신규 주문', making:'제조 중', done:'완료'}[s] || s;
+}
+
+function setStatus(id, status) {
+  const o = orders.find(x => x.id===id);
+  if (o) { o.status = status; renderOrders(); updateStats(); }
+}
+
+/* 테스트용 더미 주문 추가 */
+function addDemoOrder() {
+  const sampleItems = menus.filter(m=>!m.soldout).slice(0,2).map(m=>({...m,qty:1}));
+  if (!sampleItems.length) { alert('메뉴를 먼저 추가해주세요.'); return; }
+  const total = sampleItems.reduce((s,i)=>s+i.price,0);
+  const oz = sampleItems.reduce((s,i)=>s+i.price/100*i.reward,0);
+  const no = String(Date.now()).slice(-6);
+  const now = new Date();
+  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  orders.push({ id:nextOrderId++, no, items:sampleItems, total, oz, status:'new', time });
   renderOrders();
   updateStats();
 }
 
-// ── 샘플 메뉴 ──
-function loadSampleMenus(){
-  ownerMenus=[
-    {id:1,name:'아메리카노',cat:'☕ 커피',price:4500,emoji:'☕',reward:1,soldout:false},
-    {id:2,name:'카페라떼',cat:'☕ 커피',price:5000,emoji:'🥛',reward:1.5,soldout:false},
-    {id:3,name:'바닐라라떼',cat:'☕ 커피',price:5500,emoji:'🍶',reward:2,soldout:false},
-    {id:4,name:'치즈케이크',cat:'🍰 디저트',price:7000,emoji:'🍰',reward:3,soldout:false},
-  ];
+/* ── 메뉴 관리 ── */
+function renderMenuCards() {
+  const cnt = document.getElementById('menuCount');
+  cnt.textContent = `메뉴 ${menus.length}개`;
+  if (!menus.length) {
+    document.getElementById('menuCards').innerHTML = `
+      <div class="empty-state" style="padding:48px 20px">
+        <div class="empty-icon">🍽</div>
+        <div class="empty-text">메뉴를 추가해주세요</div>
+      </div>`;
+    return;
+  }
+  document.getElementById('menuCards').innerHTML = menus.map(m => `
+    <div class="menu-card">
+      <div class="mc-emoji">${m.emoji||'🍽'}</div>
+      <div class="mc-info">
+        <div class="mc-name">${m.name}${m.soldout?' <span style="font-size:11px;color:var(--warn)">[품절]</span>':''}</div>
+        <div class="mc-cat">${m.cat}</div>
+        <div>
+          <span class="mc-price">₩${m.price.toLocaleString()}</span>
+          <span class="mc-rw">${m.reward}x OZ</span>
+        </div>
+      </div>
+      <div class="mc-actions">
+        <button class="mc-toggle${m.soldout?' soldout':''}" onclick="toggleSoldout(${m.id})">${m.soldout?'판매재개':'품절처리'}</button>
+        <button class="mc-del" onclick="deleteMenu(${m.id})">삭제</button>
+      </div>
+    </div>
+  `).join('');
 }
 
-// ── 탭 전환 ──
-function switchTab(t,el){
-  currentMainTab=t;
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active')); el.classList.add('active');
-  document.getElementById('tabMenu').style.display=t==='menu'?'flex':'none';
-  document.getElementById('tabSales').style.display=t==='sales'?'flex':'none';
-  if(t==='sales') loadSales();
+function openAddMenu() { document.getElementById('addMenuModal').classList.add('on'); }
+function closeAddMenu() {
+  document.getElementById('addMenuModal').classList.remove('on');
+  ['mName','mCat','mEmoji','mPrice','mReward','mDesc'].forEach(id => document.getElementById(id).value='');
 }
 
-// ── 메뉴 렌더 ──
-function renderMenus(){
-  const filtered=currentFilter==='all'?ownerMenus:ownerMenus.filter(m=>m.cat===currentFilter);
-  const grid=document.getElementById('menuGrid');
-  if(!filtered.length){ grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🍽</div>메뉴가 없습니다</div>'; return; }
-  grid.innerHTML=filtered.map(m=>`<div class="mc ${m.soldout?'so':''}">${m.soldout?'<div class="so-badge">품절</div>':''}<div class="mc-em">${m.emoji}</div><div class="mc-nm">${m.name}</div><div class="mc-cat">${m.cat}</div><div class="mc-bot"><div class="mc-pr">₩${m.price.toLocaleString()}</div><div class="mc-rw">${m.reward}x</div></div></div>`).join('');
-  // 카테고리 필터
-  const cats=['all',...new Set(ownerMenus.map(m=>m.cat))];
-  const t=T[lang]||T.ko;
-  document.getElementById('catFilter').innerHTML=cats.map(c=>`<button class="cf-btn ${c===currentFilter?'active':''}" onclick="filterCat('${c}',this)">${c==='all'?(t['all']||'전체'):c}</button>`).join('');
-  document.getElementById('st-menus').textContent=ownerMenus.filter(m=>!m.soldout).length;
-}
-function filterCat(c,el){ currentFilter=c; document.querySelectorAll('.cf-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); renderMenus(); }
-function syncMenus(){ toast('동기화 완료'); renderMenus(); }
-
-// ── 주문 렌더 ──
-function renderOrders(){
-  const list=document.getElementById('ordersList'),t=T[lang]||T.ko;
-  if(!ownerOrders.length){ list.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>${t['no-orders']||'주문이 없습니다'}</div>`; return; }
-  list.innerHTML=ownerOrders.map(o=>`<div class="oc"><div class="oc-top"><div class="oc-no">#${o.no}</div><div class="oc-st ${o.status}">${o.status==='new'?'신규':o.status==='making'?'제조중':'완료'}</div></div><div class="oc-items">${o.items}</div><div class="oc-total">₩${o.total.toLocaleString()}</div><div class="oc-btns"><button class="oc-btn" onclick="changeOrderStatus('${o.no}','making')">제조중</button><button class="oc-btn acc" onclick="changeOrderStatus('${o.no}','done')">완료</button></div></div>`).join('');
-}
-function changeOrderStatus(no,status){ const o=ownerOrders.find(x=>x.no===no); if(o){ o.status=status; renderOrders(); toast(`#${no} ${status==='making'?'제조 시작':'완료'}`); } }
-
-// ── 통계 ──
-function updateStats(){
-  document.getElementById('st-sales').textContent='₩'+ownerOrders.filter(o=>o.status==='done').reduce((s,o)=>s+o.total,0).toLocaleString();
-  document.getElementById('st-orders').textContent=ownerOrders.length;
-  document.getElementById('st-oz').textContent='0';
+function saveMenu() {
+  const name = document.getElementById('mName').value.trim();
+  const price = parseInt(document.getElementById('mPrice').value);
+  if (!name || !price) { alert('메뉴명과 가격은 필수입니다.'); return; }
+  const menu = {
+    id: nextMenuId++,
+    name,
+    cat: document.getElementById('mCat').value.trim() || '기타',
+    emoji: document.getElementById('mEmoji').value.trim() || '🍽',
+    price,
+    reward: parseFloat(document.getElementById('mReward').value) || 1,
+    desc: document.getElementById('mDesc').value.trim(),
+    soldout: false
+  };
+  menus.push(menu);
+  saveMenus();
+  renderMenuCards();
+  updateStats();
+  closeAddMenu();
 }
 
-// ── 매출 (데모) ──
-function loadSales(){
-  document.getElementById('ss-total').textContent='0';
-  document.getElementById('ss-cnt').textContent='0';
-  document.getElementById('ss-oz').textContent='0';
-  document.getElementById('ss-bal').textContent='0';
+function toggleSoldout(id) {
+  const m = menus.find(x=>x.id===id);
+  if (m) { m.soldout=!m.soldout; saveMenus(); renderMenuCards(); updateStats(); }
 }
 
-// ── 체인 로그 ──
-function addLog(msg){ const log=document.getElementById('chainLog'),d=new Date(),t=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`; log.innerHTML=`<div class="cl-item">[${t}] ${msg}</div>`+log.innerHTML; }
+function deleteMenu(id) {
+  if (!confirm('메뉴를 삭제할까요?')) return;
+  menus = menus.filter(x=>x.id!==id);
+  saveMenus();
+  renderMenuCards();
+  updateStats();
+}
 
-// ── 로그아웃 ──
-function logout(){ localStorage.removeItem('w3pos_owner'); location.reload(); }
+function saveMenus() { localStorage.setItem('wizpos_menus', JSON.stringify(menus)); }
 
-// ── 초기화 ──
-document.addEventListener('DOMContentLoaded',()=>{
-  applyTheme();
-  applyLang();
-  setStep(0);
-  const saved=localStorage.getItem('w3pos_owner');
-  if(saved&&window.ethereum){
-    window.ethereum.request({method:'eth_accounts'}).then(a=>{
-      if(a.length){
-        authAddr=a[0];
-        document.getElementById('wsAddr').textContent=authAddr.slice(0,6)+'...'+authAddr.slice(-4);
-        document.getElementById('wsBox').classList.add('show');
-        ownerStore={id:0,name:'이전 매장',active:true};
-        document.getElementById('doneDesc').textContent='이전 지갑으로 연결되었습니다.';
-        setStep(2);
+/* ── 매출 통계 ── */
+function updateStats() {
+  const done = orders.filter(o=>o.status==='done');
+  const total = done.reduce((s,o)=>s+o.total,0);
+  const oz = done.reduce((s,o)=>s+o.oz,0);
+  document.getElementById('statSales').textContent = '₩'+total.toLocaleString();
+  document.getElementById('statCount').textContent = done.length+'건';
+  document.getElementById('statOZ').textContent = oz.toFixed(1)+' OZ';
+  document.getElementById('statMenus').textContent = menus.filter(m=>!m.soldout).length+'개';
+  // 주문 내역
+  const txList = document.getElementById('txList');
+  if (!done.length) {
+    txList.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">완료된 주문이 없습니다</div>';
+    return;
+  }
+  txList.innerHTML = [...done].reverse().map(o=>`
+    <div class="tx-row">
+      <div class="tx-left">
+        <div class="tx-items">${o.items.map(i=>`${i.name} ×${i.qty}`).join(', ')}</div>
+        <div class="tx-time">#${o.no} · ${o.time}</div>
+      </div>
+      <div class="tx-amount">₩${o.total.toLocaleString()}</div>
+    </div>
+  `).join('');
+}
+
+/* ── 모달 배경 클릭 닫기 ── */
+document.getElementById('addMenuModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAddMenu();
+});
+
+/* ── 초기화 ── */
+window.addEventListener('DOMContentLoaded', function() {
+  const saved = localStorage.getItem('wizpos_addr');
+  if (saved && window.ethereum) {
+    window.ethereum.request({method:'eth_accounts'}).then(accounts => {
+      if (accounts.length) {
+        walletAddr = accounts[0];
+        const savedStore = localStorage.getItem('wizpos_store');
+        if (savedStore) {
+          store = JSON.parse(savedStore);
+          menus = JSON.parse(localStorage.getItem('wizpos_menus') || '[]');
+          nextMenuId = menus.length ? Math.max(...menus.map(m=>m.id)) + 1 : 1;
+          enterDashboard();
+        } else {
+          document.getElementById('connAddr').textContent = walletAddr.slice(0,6)+'...'+walletAddr.slice(-4);
+          goPage('pg-register');
+        }
       }
-    });
+    }).catch(()=>{});
   }
 });
 </script>
