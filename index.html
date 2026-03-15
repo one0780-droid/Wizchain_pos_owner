@@ -2,250 +2,18 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-  <!-- PWA 설정 -->
-  <meta name="theme-color" content="#111111">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="WizPOS">
-  <link rel="manifest" href="manifest.json">
-  <!-- iOS 아이콘 -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23111111'/><text x='50%25' y='58%25' font-size='95' text-anchor='middle' dominant-baseline='middle' font-family='Arial Black' font-weight='900' fill='%2300a86b'>W</text></svg>">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WizPOS</title>
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="WizPOS">
+<link rel="manifest" href="manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg:#f5f5f5; --surface:#fff; --border:#e8e8e8;
-  --accent:#00a86b; --text:#111; --muted:#888;
-  --warn:#e03e1a; --gold:#b8860b; --purple:#5b2be8;
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif}
-body{max-width:430px;margin:0 auto;position:relative}
 
-/* ── 페이지 전환 ── */
-.page{display:none;min-height:100vh;flex-direction:column}
-.page.on{display:flex}
-
-/* ════════════════════
-   PAGE 1: 지갑 연결
-════════════════════ */
-#pg-wallet{align-items:center;justify-content:center;padding:40px 24px;background:var(--bg)}
-.logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:52px;letter-spacing:-1px;line-height:1;margin-bottom:8px}
-.logo span{color:var(--accent)}
-.tagline{font-size:13px;color:var(--muted);letter-spacing:3px;margin-bottom:16px}
-.wiz-badge{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--border);border-radius:20px;padding:6px 16px;margin-bottom:44px}
-.wiz-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.wiz-name{font-size:13px;font-weight:700;color:var(--accent)}
-.wiz-by{font-size:12px;color:var(--muted)}
-.wallet-box{width:100%;max-width:340px}
-.err-box{background:#fff0ee;border:2px solid var(--warn);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--warn);margin-bottom:16px;display:none}
-.load-box{text-align:center;padding:12px;font-size:14px;color:var(--muted);display:none}
-.w-btn{width:100%;display:flex;align-items:center;gap:16px;background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;text-align:left}
-.w-btn:active{opacity:.75}
-.w-btn.mm{border-color:#f6851b}
-.w-btn.tw{border-color:#3375ff}
-.w-btn.wc{border-color:#3b99fc}
-.w-btn-icon{font-size:30px;flex-shrink:0}
-.w-btn-name{font-size:17px;font-weight:700;color:var(--text)}
-.w-btn-desc{font-size:13px;color:var(--muted)}
-.w-btn-arr{margin-left:auto;font-size:18px;color:var(--muted)}
-.net-note{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);line-height:1.8}
-
-/* ════════════════════
-   PAGE 2: 매장 등록
-════════════════════ */
-#pg-register{background:var(--bg);padding:52px 24px 40px}
-.reg-title{font-size:26px;font-weight:900;margin-bottom:6px}
-.reg-sub{font-size:14px;color:var(--muted);margin-bottom:32px}
-.connected-addr{display:flex;align-items:center;gap:8px;background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:28px}
-.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.conn-addr{font-family:monospace;font-size:14px;font-weight:700;color:var(--accent)}
-.form-group{margin-bottom:18px}
-.form-label{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:7px;display:block}
-.form-input{width:100%;padding:14px 16px;background:var(--surface);border:2px solid var(--border);border-radius:12px;font-size:16px;color:var(--text);font-family:'Noto Sans KR',sans-serif}
-.form-input:focus{outline:none;border-color:var(--accent)}
-.form-select{width:100%;padding:14px 16px;background:var(--surface);border:2px solid var(--border);border-radius:12px;font-size:16px;color:var(--text);font-family:'Noto Sans KR',sans-serif;appearance:none}
-.reg-btn{width:100%;padding:17px;background:var(--accent);border:none;border-radius:14px;color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
-
-/* ════════════════════
-   APP 헤더
-════════════════════ */
-.app-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:50}
-.app-logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:22px;letter-spacing:-0.5px}
-.app-logo span{color:var(--accent)}
-.app-store{font-size:13px;color:var(--muted);font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.header-right{display:flex;align-items:center;gap:8px}
-.chain-live{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--accent);font-weight:700}
-.chain-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
-
-/* ── 탭 바 ── */
-.tab-bar{display:flex;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0}
-.tab-btn{flex:1;padding:14px 8px;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;font-family:'Noto Sans KR',sans-serif;border-bottom:3px solid transparent;transition:all .15s}
-.tab-btn.on{color:var(--accent);border-bottom-color:var(--accent)}
-
-/* ════════════════════
-   PAGE 3: 주문 관리
-════════════════════ */
-#pg-orders{background:var(--bg)}
-.orders-body{flex:1;overflow-y:auto;padding:12px 16px 80px}
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted)}
-.empty-icon{font-size:48px;margin-bottom:12px}
-.empty-text{font-size:16px}
-
-.order-card{background:var(--surface);border:2px solid var(--border);border-radius:16px;margin-bottom:12px;overflow:hidden}
-.order-card.new-order{border-color:var(--accent)}
-.oc-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
-.oc-no{font-size:16px;font-weight:700}
-.oc-time{font-size:12px;color:var(--muted)}
-.oc-status{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px}
-.oc-status.new{background:#e8faf2;color:var(--accent)}
-.oc-status.making{background:#fff8e1;color:#f59e0b}
-.oc-status.done{background:#f0f0f0;color:var(--muted)}
-.oc-items{padding:12px 16px;border-bottom:1px solid var(--border)}
-.oc-item-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
-.oc-item-row:last-child{margin-bottom:0}
-.oc-item-name{color:var(--muted)}
-.oc-item-price{font-weight:700}
-.oc-foot{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
-.oc-total{font-size:18px;font-weight:900}
-.oc-btns{display:flex;gap:8px}
-.oc-btn{padding:9px 16px;border:2px solid var(--border);background:transparent;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;color:var(--text)}
-.oc-btn.accept{background:var(--accent);border-color:var(--accent);color:#fff}
-.oc-btn.complete{background:var(--text);border-color:var(--text);color:#fff}
-
-/* ════════════════════
-   PAGE 4: 메뉴 관리
-════════════════════ */
-#pg-menus{background:var(--bg)}
-.menus-body{flex:1;overflow-y:auto;padding:12px 16px 100px}
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:4px}
-.section-title{font-size:17px;font-weight:900}
-.add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif}
-
-.menu-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
-.mc-emoji{font-size:28px;width:50px;height:50px;background:var(--bg);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mc-info{flex:1;min-width:0}
-.mc-name{font-size:16px;font-weight:700;margin-bottom:2px}
-.mc-cat{font-size:13px;color:var(--muted);margin-bottom:4px}
-.mc-price{font-size:15px;font-weight:900}
-.mc-rw{font-size:12px;color:var(--accent);font-weight:700;margin-left:6px}
-.mc-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
-.mc-toggle{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;border:2px solid var(--border);background:transparent;color:var(--text)}
-.mc-toggle.soldout{background:#fff0ee;border-color:var(--warn);color:var(--warn)}
-.mc-del{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;border:2px solid var(--border);background:transparent;color:var(--muted)}
-
-/* 메뉴 추가 모달 */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end}
-.modal-bg.on{display:flex}
-.modal{background:var(--surface);width:100%;max-width:430px;margin:0 auto;border-radius:22px 22px 0 0;padding:24px 20px 40px;animation:slideUp .25s ease}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-handle{width:36px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 20px}
-.modal-title{font-size:20px;font-weight:900;margin-bottom:20px}
-.modal-form-group{margin-bottom:14px}
-.modal-label{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px;display:block}
-.modal-input{width:100%;padding:13px 14px;background:var(--bg);border:2px solid var(--border);border-radius:10px;font-size:15px;color:var(--text);font-family:'Noto Sans KR',sans-serif}
-.modal-input:focus{outline:none;border-color:var(--accent)}
-.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.modal-save{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
-.modal-cancel{width:100%;padding:13px;background:transparent;border:2px solid var(--border);border-radius:12px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
-
-/* ════════════════════
-   PAGE 5: 매출 통계
-════════════════════ */
-#pg-stats{background:var(--bg)}
-.stats-body{flex:1;overflow-y:auto;padding:12px 16px 80px}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.stat-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px}
-.stat-label{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.stat-val{font-size:24px;font-weight:900}
-.stat-val.green{color:var(--accent)}
-.stat-val.gold{color:var(--gold)}
-.stat-val.purple{color:var(--purple)}
-
-.tx-section{background:var(--surface);border:2px solid var(--border);border-radius:14px;overflow:hidden}
-.tx-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700}
-.tx-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
-.tx-row:last-child{border-bottom:none}
-.tx-left{}
-.tx-items{font-size:14px;color:var(--muted);margin-bottom:2px}
-.tx-time{font-size:12px;color:var(--muted)}
-.tx-amount{font-size:17px;font-weight:900}
-
-
-  .settings-btn{display:flex;align-items:center;gap:7px;background:transparent;border:2px solid var(--border);border-radius:22px;padding:7px 14px;cursor:pointer;font-size:14px;font-weight:700;color:var(--text);white-space:nowrap}
-  .settings-btn:active{opacity:.75}
-  .s-arrow{font-size:9px;color:var(--muted);transition:transform .2s}
-  .settings-btn.open .s-arrow{transform:rotate(180deg)}
-  .settings-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:2px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.15);min-width:180px;z-index:1100}
-  .settings-menu.open{display:block}
-  .s-section-title{padding:10px 16px 4px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
-  .s-item{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border)}
-  .s-item:last-child{border-bottom:none}
-  .s-item:active{opacity:.7}
-  .s-item.danger{color:var(--warn)}
-  .s-check{color:var(--accent);font-size:15px}
-  .s-divider{height:2px;background:var(--border)}
-
-
-  /* ---- 설정 버튼 ---- */
-  .cfg-wrap{position:absolute;top:16px;right:16px;z-index:100}
-  .cfg-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface);border:2px solid var(--border);border-radius:24px;padding:9px 18px;cursor:pointer;font-size:15px;font-weight:700;color:var(--text);line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-  .cfg-btn:active{opacity:.7}
-  .cfg-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:2px solid var(--border);border-radius:14px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:200;overflow:hidden}
-  .cfg-menu.on{display:block}
-  .cfg-sec{padding:8px 14px 4px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
-  .cfg-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border)}
-  .cfg-row:last-child{border-bottom:none}
-  .cfg-row:active{opacity:.7}
-  .cfg-row.red{color:var(--warn)}
-  .cfg-chk{color:var(--accent);font-weight:900}
-  .cfg-ov{display:none;position:fixed;inset:0;z-index:99}
-  .cfg-ov.on{display:block}
-
-/* 메뉴 카드 달러 위주 */
-.menu-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
-.menu-card.soldout{opacity:.4}
-.mc-emoji{font-size:28px;width:50px;height:50px;background:var(--bg);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mc-info{flex:1;min-width:0}
-.mc-name{font-size:16px;font-weight:700;margin-bottom:2px}
-.mc-cat{font-size:12px;color:var(--muted);margin-bottom:6px}
-.mc-price-wrap{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
-.mc-usdw{font-size:20px;font-weight:900;color:var(--text)}
-.mc-usdw-label{font-size:13px;color:var(--muted);font-weight:500}
-.mc-won{font-size:12px;color:var(--muted);font-weight:500}
-.mc-reward{font-size:12px;color:var(--muted)}
-.mc-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
-.mc-btn{padding:7px 12px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap}
-.mc-btn.warn{border-color:var(--warn);color:var(--warn)}
-.mc-btn.del{border-color:#ddd;color:#bbb}
-/* 주문 카드 달러 위주 */
-.order-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px}
-.order-card.status-new{border-color:var(--accent)}
-.order-card.status-making{border-color:#f59e0b}
-.order-card.status-done{opacity:.6}
-.oc-head{display:flex;justify-content:space-between;margin-bottom:8px}
-.oc-no{font-size:15px;font-weight:700}
-.oc-time{font-size:13px;color:var(--muted)}
-.oc-items{font-size:14px;color:var(--muted);margin-bottom:10px}
-.oc-foot{display:flex;justify-content:space-between;align-items:center}
-.oc-usdw{font-size:20px;font-weight:900;color:var(--text)}
-.oc-won{font-size:12px;color:var(--muted);font-weight:500;margin-left:4px}
-.oc-btn{padding:9px 18px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif}
-.oc-btn.accept{background:var(--accent);color:#fff}
-.oc-btn.complete{background:#f59e0b;color:#fff}
-/* 통계 */
-.tx-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
-.tx-items{font-size:14px;margin-bottom:2px}
-.tx-no{font-size:12px;color:var(--muted)}
-.tx-usdw{font-size:16px;font-weight:900;color:var(--text);text-align:right}
-.tx-won{font-size:12px;color:var(--muted);text-align:right}
-
-</style>
-
+<!-- 설정 JS (head에서 먼저 로드) -->
 <script>
 /* ==== 설정 (언어/테마) ==== */
 (function(){
@@ -253,315 +21,39 @@ body{max-width:430px;margin:0 auto;position:relative}
   var theme = localStorage.getItem('cfg_theme') || 'light';
   var I18N = {
     ko:{ tagline:'더 편한 글로벌 올인원 포스', mm:'브라우저 익스텐션 / 모바일 앱', tw:'모바일 앱으로 연결', dex:'WizChain 탈중앙화 거래소' },
-    en:{ tagline:'The Global All-in-One POS', mm:'Browser Extension / Mobile App', tw:'Connect Mobile App', dex:'WizChain DEX Exchange' },
-    zh:{ tagline:'全球一站式POS', mm:'浏览器扩展 / 移动应用', tw:'通过移动应用连接', dex:'WizChain去中心化交易所' },
+    en:{ tagline:'The Global All-in-One POS',  mm:'Browser Extension / Mobile App',  tw:'Connect Mobile App',     dex:'WizChain DEX Exchange' },
+    zh:{ tagline:'全球一站式POS',              mm:'浏览器扩展 / 移动应用',            tw:'通过移动应用连接',        dex:'WizChain去中心化交易所' },
   };
   function applyLang(l) {
     lang = l; localStorage.setItem('cfg_lang', l);
-    var flags = {ko:'🇰🇷', en:'🇺🇸', zh:'🇨🇳'};
     var el = document.getElementById('cfgLang');
-    if(el) el.textContent = flags[l];
-    ['lk','le','lz'].forEach(function(id,i){
-      var e=document.getElementById(id);
-      if(e) e.style.display=['ko','en','zh'][i]===l?'inline':'none';
-    });
+    if(el) el.textContent = {ko:'🇰🇷',en:'🇺🇸',zh:'🇨🇳'}[l];
+    ['lk','le','lz'].forEach(function(id,i){ var e=document.getElementById(id); if(e) e.style.display=['ko','en','zh'][i]===l?'inline':'none'; });
     var t=I18N[l]||I18N.ko;
-    var map={'i-tagline':t.tagline,'i-mm':t.mm,'i-tw':t.tw,'i-dex':t.dex};
-    Object.keys(map).forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=map[id]; });
+    ['i-tagline','i-mm','i-tw','i-dex'].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=t[id.slice(2)]; });
   }
   function applyTheme(m) {
     theme = m; localStorage.setItem('cfg_theme', m);
     var s=document.getElementById('cfg-theme-style');
     if(!s){ s=document.createElement('style'); s.id='cfg-theme-style'; document.head.appendChild(s); }
     s.textContent = m==='dark'
-      ? 'body,html{background:#111!important;color:#f0f0f0!important}.page{background:#111!important}.w-btn{background:#1e1e1e!important;border-color:#333!important}.w-btn-name{color:#f0f0f0!important}.w-btn-desc{color:#999!important}.logo{color:#f0f0f0!important}.tagline{color:#999!important}.wiz-badge{border-color:#333!important}.wiz-by{color:#999!important}.net-note{color:#999!important}.cfg-btn{background:#1e1e1e!important;border-color:#333!important;color:#f0f0f0!important}.cfg-menu{background:#1e1e1e!important;border-color:#333!important}.cfg-row{color:#f0f0f0!important;border-color:#333!important}.app-header,.tab-bar,.menus-body,.orders-body,.stats-body,.order-card,.menu-card,.modal{background:#1e1e1e!important;border-color:#333!important}.mc-name,.oc-no,.tx-items{color:#f0f0f0!important}'
+      ? 'body,html{background:#111!important;color:#f0f0f0!important}.page{background:#111!important}.w-btn{background:#1e1e1e!important;border-color:#333!important}.w-btn-name{color:#f0f0f0!important}.w-btn-desc{color:#999!important}.logo{color:#f0f0f0!important}.tagline{color:#999!important}.wiz-badge{border-color:#333!important}.cfg-btn{background:#1e1e1e!important;border-color:#333!important;color:#f0f0f0!important}.cfg-menu{background:#1e1e1e!important;border-color:#333!important}.cfg-row{color:#f0f0f0!important;border-color:#333!important}.app-header,.tab-bar,.order-card,.menu-card,.modal-bg .modal{background:#1e1e1e!important;border-color:#333!important}.mc-name,.oc-no,.app-store{color:#f0f0f0!important}'
       : '';
     var icon=document.getElementById('cfgThemeIcon');
     if(icon) icon.textContent=m==='dark'?'🌙':'☀️';
     ['tl','td'].forEach(function(id,i){ var e=document.getElementById(id); if(e) e.style.display=['light','dark'][i]===m?'inline':'none'; });
   }
-  window.cfgToggle=function(){ var m=document.getElementById('cfgMenu'),o=document.getElementById('cfgOv'); if(!m)return; var on=m.classList.toggle('on'); o.classList.toggle('on',on); };
-  window.cfgClose=function(){ var m=document.getElementById('cfgMenu'),o=document.getElementById('cfgOv'); if(m)m.classList.remove('on'); if(o)o.classList.remove('on'); };
-  window.cfgLang  =function(l){ applyLang(l);  cfgClose(); };
-  window.cfgTheme =function(m){ applyTheme(m); cfgClose(); };
-  window.cfgDex   =function(){ cfgClose(); window.open('https://dex.wizclass.net','_blank'); };
-  window.cfgLogout=function(){ cfgClose(); var msg=lang==='en'?'Logout?':lang==='zh'?'退出登录？':'로그아웃 할까요?'; if(!confirm(msg))return; localStorage.clear(); location.reload(); };
+  window.cfgToggle =function(){ var m=document.getElementById('cfgMenu'),o=document.getElementById('cfgOv'); if(!m)return; var on=m.classList.toggle('on'); o.classList.toggle('on',on); };
+  window.cfgClose  =function(){ var m=document.getElementById('cfgMenu'),o=document.getElementById('cfgOv'); if(m)m.classList.remove('on'); if(o)o.classList.remove('on'); };
+  window.cfgLang   =function(l){ applyLang(l);  cfgClose(); };
+  window.cfgTheme  =function(m){ applyTheme(m); cfgClose(); };
+  window.cfgDex    =function(){ cfgClose(); window.open('https://dex.wizclass.net','_blank'); };
+  window.cfgLogout =function(){ cfgClose(); if(!confirm(lang==='en'?'Logout?':lang==='zh'?'退出登录？':'로그아웃 할까요?'))return; localStorage.clear(); location.reload(); };
   document.addEventListener('DOMContentLoaded',function(){ applyLang(lang); applyTheme(theme); });
 })();
 </script>
-</head>
-<body>
 
-<!-- ══════════════════════════
-     PAGE 1: 지갑 연결
-══════════════════════════ -->
-<div class="page on" id="pg-wallet" style="position:relative;">
-  <div class="cfg-wrap">
-    <button class="cfg-btn" id="cfgBtn" onclick="cfgToggle()">
-      <span id="cfgLang" style="font-size:20px;">🇰🇷</span>
-      <span id="cfgThemeIcon" style="font-size:16px;">☀️</span>
-    </button>
-    <div class="cfg-menu" id="cfgMenu">
-      <div class="cfg-sec">언어 / Language</div>
-      <div class="cfg-row" onclick="cfgLang('ko')"><span>🇰🇷 한국어</span><span class="cfg-chk" id="lk">✓</span></div>
-      <div class="cfg-row" onclick="cfgLang('en')"><span>🇺🇸 English</span><span class="cfg-chk" id="le" style="display:none">✓</span></div>
-      <div class="cfg-row" onclick="cfgLang('zh')"><span>🇨🇳 中文</span><span class="cfg-chk" id="lz" style="display:none">✓</span></div>
-      <div class="cfg-sec" style="margin-top:4px">테마 / Theme</div>
-      <div class="cfg-row" onclick="cfgTheme('light')"><span>☀️ 라이트</span><span class="cfg-chk" id="tl">✓</span></div>
-      <div class="cfg-row" onclick="cfgTheme('dark')"><span>🌙 다크</span><span class="cfg-chk" id="td" style="display:none">✓</span></div>
-      <div class="cfg-sec" style="margin-top:4px">서비스</div>
-      <div class="cfg-row" onclick="cfgDex()"><span>💱 WizDEX</span></div>
-      <div class="cfg-row red" onclick="cfgLogout()"><span>⏏ 로그아웃</span></div>
-    </div>
-  </div>
-  <div class="cfg-ov" id="cfgOv" onclick="cfgClose()"></div>
-
-  <div class="logo">Wiz<span>POS</span></div>
-  <div class="tagline"><span id="i-tagline">더 편한 글로벌 올인원 포스</span></div>
-  <div class="wiz-badge">
-    <div class="wiz-dot"></div>
-    <span class="wiz-name">WizChain</span>
-    <span class="wiz-by">by WizClass</span>
-  </div>
-  <div class="wallet-box">
-    <div class="err-box" id="errBox"></div>
-    <div class="load-box" id="loadBox">연결 중...</div>
-    <button class="w-btn mm" onclick="connectMM()">
-      <span class="w-btn-icon">🦊</span>
-      <div>
-        <div class="w-btn-name">MetaMask</div>
-        <div class="w-btn-desc"><span id="i-mm">브라우저 익스텐션 / 모바일 앱</span></div>
-      </div>
-      <span class="w-btn-arr">→</span>
-    </button>
-    <button class="w-btn tw" onclick="connectTW()">
-      <span class="w-btn-icon">🛡️</span>
-      <div>
-        <div class="w-btn-name">Trust Wallet</div>
-        <div class="w-btn-desc"><span id="i-tw">모바일 앱으로 연결</span></div>
-      </div>
-      <span class="w-btn-arr">→</span>
-    </button>
-    <button class="w-btn" onclick="cfgDex()" style="border-color:#7c3aed;">
-      <span class="w-btn-icon">💱</span>
-      <div>
-        <div class="w-btn-name" style="color:#7c3aed;">WizDEX</div>
-        <div class="w-btn-desc"><span id="i-dex">WizChain 탈중앙화 거래소</span></div>
-      </div>
-      <span class="w-btn-arr">→</span>
-    </button>
-    <button style="width:100%;padding:16px;background:transparent;border:2px solid var(--border);border-radius:14px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:4px;" onclick="guestMode()">지갑 없이 둘러보기</button>
-    <div class="net-note">WizChain (Chain ID: 10243)<br>연결 시 자동으로 네트워크 전환</div>
-  </div>
-</div>
-
-<!-- ══════════════════════════
-     PAGE 2: 매장 등록
-══════════════════════════ -->
-<div class="page" id="pg-register">
-  <div class="reg-title">매장 등록</div>
-  <div class="reg-sub">처음 이용하시나요? 매장 정보를 입력해주세요.</div>
-  <div class="connected-addr">
-    <div class="conn-dot"></div>
-    <span class="conn-addr" id="connAddr">0x...</span>
-  </div>
-  <div class="form-group">
-    <label class="form-label">매장명 *</label>
-    <input class="form-input" id="regName" placeholder="예: 위즈카페 강남점">
-  </div>
-  <div class="form-group">
-    <label class="form-label">카테고리</label>
-    <select class="form-select" id="regCat">
-      <option>☕ 카페</option>
-      <option>🍖 한식</option>
-      <option>🍕 양식</option>
-      <option>🥐 베이커리</option>
-      <option>🍜 면류</option>
-      <option>🍱 분식</option>
-      <option>🛒 편의점</option>
-      <option>기타</option>
-    </select>
-  </div>
-  <div class="form-group">
-    <label class="form-label">주소</label>
-    <input class="form-input" id="regAddr" placeholder="예: 서울 강남구 테헤란로 123">
-  </div>
-  <button class="reg-btn" onclick="registerStore()">매장 등록하기 →</button>
-</div>
-
-<!-- ══════════════════════════
-     PAGE 3: 주문 관리
-══════════════════════════ -->
-<div class="page" id="pg-orders">
-  <div class="app-header">
-    <div>
-      <div class="app-logo">Wiz<span>POS</span></div>
-      <div class="app-store" id="storeName">매장명</div>
-    </div>
-    <div class="header-right">
-      <div class="chain-live">
-        <div class="chain-dot"></div>
-        WizChain
-      </div>
-    </div>
-  </div>
-  <div class="tab-bar">
-    <button class="tab-btn on" onclick="switchTab('orders',this)">📋 주문</button>
-    <button class="tab-btn" onclick="switchTab('menus',this)">🍽 메뉴</button>
-    <button class="tab-btn" onclick="switchTab('stats',this)">📊 매출</button>
-  </div>
-  <div class="orders-body" id="ordersBody">
-    <div class="empty-state">
-      <div class="empty-icon">📭</div>
-      <div class="empty-text">아직 주문이 없습니다</div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════
-     PAGE 4: 메뉴 관리
-══════════════════════════ -->
-<div class="page" id="pg-menus">
-  <div class="app-header">
-    <div>
-      <div class="app-logo">Wiz<span>POS</span></div>
-      <div class="app-store" id="storeNameM">매장명</div>
-    </div>
-    <div class="header-right">
-      <div class="chain-live">
-        <div class="chain-dot"></div>
-        WizChain
-      </div>
-    </div>
-  </div>
-  <div class="tab-bar">
-    <button class="tab-btn" onclick="switchTab('orders',this)">📋 주문</button>
-    <button class="tab-btn on" onclick="switchTab('menus',this)">🍽 메뉴</button>
-    <button class="tab-btn" onclick="switchTab('stats',this)">📊 매출</button>
-  </div>
-  <div class="menus-body">
-    <div class="section-header">
-      <div class="section-title" id="menuCount">메뉴 0개</div>
-      <button class="add-btn" onclick="openAddMenu()">+ 메뉴 추가</button>
-    </div>
-    <div id="menuCards"></div>
-  </div>
-</div>
-
-<!-- ══════════════════════════
-     PAGE 5: 매출 통계
-══════════════════════════ -->
-<div class="page" id="pg-stats">
-  <div class="app-header">
-    <div>
-      <div class="app-logo">Wiz<span>POS</span></div>
-      <div class="app-store" id="storeNameS">매장명</div>
-    </div>
-    <div class="header-right">
-      <div class="chain-live">
-        <div class="chain-dot"></div>
-        WizChain
-      </div>
-    </div>
-  </div>
-  <div class="tab-bar">
-    <button class="tab-btn" onclick="switchTab('orders',this)">📋 주문</button>
-    <button class="tab-btn" onclick="switchTab('menus',this)">🍽 메뉴</button>
-    <button class="tab-btn on" onclick="switchTab('stats',this)">📊 매출</button>
-  </div>
-  <div class="stats-body">
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-label">오늘 매출</div>
-        <div class="stat-val green" id="statSales">₩0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">주문 건수</div>
-        <div class="stat-val purple" id="statCount">0건</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">OZ 지급</div>
-        <div class="stat-val gold" id="statOZ">0 OZ</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">활성 메뉴</div>
-        <div class="stat-val" id="statMenus">0개</div>
-      </div>
-    </div>
-    <div class="tx-section">
-      <div class="tx-header">주문 내역</div>
-      <div id="txList">
-        <div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">아직 주문 내역이 없습니다</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════
-     메뉴 추가 모달
-══════════════════════════ -->
-<div class="modal-bg" id="addMenuModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">메뉴 추가</div>
-    <div class="modal-form-group">
-      <label class="modal-label">메뉴명 *</label>
-      <input class="modal-input" id="mName" placeholder="예: 아메리카노">
-    </div>
-    <div class="modal-row">
-      <div class="modal-form-group">
-        <label class="modal-label">카테고리</label>
-        <input class="modal-input" id="mCat" placeholder="예: 커피">
-      </div>
-      <div class="modal-form-group">
-        <label class="modal-label">이모지</label>
-        <input class="modal-input" id="mEmoji" placeholder="☕" style="font-size:20px;text-align:center">
-      </div>
-    </div>
-    <!-- 가격 입력 (원화 ↔ 달러 연동) -->
-    <div class="modal-form-group">
-      <label class="modal-label">가격 *</label>
-      <!-- 달러 기준, 원화 참고 -->
-      <div style="margin-bottom:10px;">
-        <div style="position:relative;">
-          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:900;color:var(--text);">$</span>
-          <input class="modal-input" id="mPriceUsd" type="number" placeholder="3.33"
-            style="padding-left:30px;font-size:20px;font-weight:900;" step="0.01" oninput="syncPrice('usd')">
-        </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:6px;text-align:right">= USDW 결제 금액</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:13px;color:var(--muted);white-space:nowrap;">≈ 원화환산</span>
-        <div style="position:relative;flex:1">
-          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);font-weight:700;">₩</span>
-          <input class="modal-input" id="mPrice" type="number" placeholder="4500"
-            style="padding-left:28px;font-size:14px;color:var(--muted);" oninput="syncPrice('won')">
-        </div>
-      </div>
-      <div style="text-align:right;margin-top:5px;font-size:12px;color:var(--muted);" id="rateNote">
-        실시간 환율: $1 = <span id="currentRate">1,350</span>원
-      </div>
-    </div>
-    <div class="modal-row">
-      <div class="modal-form-group">
-        <label class="modal-label">OZ 배율</label>
-        <input class="modal-input" id="mReward" type="number" placeholder="1" step="0.5">
-      </div>
-      <div class="modal-form-group">
-        <label class="modal-label">USDW 금액</label>
-        <input class="modal-input" id="mPriceUsdw" readonly placeholder="자동계산"
-          style="background:var(--bg);color:var(--accent);font-weight:700;">
-      </div>
-    </div>
-    <div class="modal-form-group">
-      <label class="modal-label">설명</label>
-      <input class="modal-input" id="mDesc" placeholder="예: 진한 에스프레소">
-    </div>
-    <button class="modal-save" onclick="saveMenu()">저장</button>
-    <button class="modal-cancel" onclick="closeAddMenu()">취소</button>
-  </div>
-</div>
-
+<!-- 메인 JS (head에서 먼저 로드) -->
 <script>
 /* == API == */
 const API = 'https://pos-api.wizclass.net';
@@ -578,11 +70,10 @@ async function api(method, path, body) {
 
 /* == 상태 == */
 let walletAddr='', store=null, menus=[], orders=[], nextOrderId=1;
-let exchangeRate=1350;
-let ws=null;
+let exchangeRate=1350, ws=null;
 
-/* == 에러/로딩 == */
-function showErr(msg){ const e=document.getElementById('errBox'); e.textContent=msg; e.style.display='block'; }
+/* == 유틸 == */
+function showErr(msg){ const e=document.getElementById('errBox'); if(e){ e.textContent=msg; e.style.display='block'; } }
 function hideErr(){ const e=document.getElementById('errBox'); if(e) e.style.display='none'; }
 function showLoad(v){ const e=document.getElementById('loadBox'); if(e) e.style.display=v?'block':'none'; }
 function goPage(id){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.getElementById(id).classList.add('on'); }
@@ -595,7 +86,7 @@ async function fetchRate() {
   } catch(_){}
 }
 
-/* == 브라우저/지갑 감지 == */
+/* == 지갑 감지 == */
 function getEnv(){
   const ua=navigator.userAgent.toLowerCase();
   return {isKakao:ua.includes('kakaotalk'),isSamsung:ua.includes('samsungbrowser'),isMetaMask:ua.includes('metamask'),isTrust:ua.includes('trust'),isMobile:/android|iphone|ipad/i.test(ua)};
@@ -615,8 +106,7 @@ async function connectWallet(provider){
     if(typeof ethers==='undefined') throw new Error('ethers 로드 실패');
     const bp=new ethers.BrowserProvider(provider);
     await bp.send('eth_requestAccounts',[]);
-    const signer=await bp.getSigner();
-    walletAddr=await signer.getAddress();
+    walletAddr=await (await bp.getSigner()).getAddress();
     try { await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x27F3'}]}); }
     catch(e){ if(e.code===4902||e.code===-32603){ try{ await provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x27F3',chainName:'WizChain',nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},rpcUrls:['https://rpc.wizclass.net']}]}); }catch(_){} } }
     localStorage.setItem('wizpos_addr', walletAddr);
@@ -658,8 +148,8 @@ async function afterConnect(){
     }
   }
   const saved=localStorage.getItem('wizpos_store');
-  if(saved){ store=JSON.parse(saved); menus=JSON.parse(localStorage.getItem('wizpos_menus')||'[]'); if(store.serverId) connectWS(store.serverId); enterDashboard(); }
-  else { document.getElementById('connAddr').textContent=walletAddr.slice(0,6)+'...'+walletAddr.slice(-4); goPage('pg-register'); }
+  if(saved){ store=JSON.parse(saved); menus=JSON.parse(localStorage.getItem('wizpos_menus')||'[]'); if(store.serverId)connectWS(store.serverId); enterDashboard(); }
+  else { const el=document.getElementById('connAddr'); if(el) el.textContent=walletAddr.slice(0,6)+'...'+walletAddr.slice(-4); goPage('pg-register'); }
   showLoad(false);
 }
 
@@ -673,95 +163,64 @@ function guestMode(){
 async function registerStore(){
   const name=document.getElementById('regName').value.trim();
   if(!name){ alert('매장명을 입력해주세요.'); return; }
-  const btn=document.querySelector('.reg-btn'); btn.textContent='등록 중...'; btn.disabled=true;
+  const btn=document.querySelector('.reg-btn'); if(btn){ btn.textContent='등록 중...'; btn.disabled=true; }
   const data=await api('POST','/api/stores',{name,cat:document.getElementById('regCat').value,emoji:'🏪',lat:37.5665,lng:126.9780,address:document.getElementById('regAddr').value.trim(),wallet_address:walletAddr.toLowerCase()});
   if(data&&data.ok&&data.store){ store={...data.store,serverId:data.store.id}; connectWS(data.store.id); }
   else { store={name,cat:document.getElementById('regCat').value,addr:document.getElementById('regAddr').value.trim(),wallet:walletAddr}; }
   localStorage.setItem('wizpos_store',JSON.stringify(store));
-  btn.textContent='매장 등록하기 →'; btn.disabled=false;
+  if(btn){ btn.textContent='매장 등록하기 →'; btn.disabled=false; }
   enterDashboard();
 }
 
-/* == 대시보드 진입 == */
+/* == 대시보드 == */
 function enterDashboard(){
   ['storeName','storeNameM','storeNameS'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent=store.name; });
+  fetchRate();
   goPage('pg-orders');
   renderOrders();
-  renderMenuCards();
-  fetchRate();
   if(store.serverId) loadOrders();
 }
 
-/* == 탭 전환 == */
 function switchTab(tab, el){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on')); el.classList.add('on');
   if(tab==='orders') goPage('pg-orders');
-  else if(tab==='menus') goPage('pg-menus');
+  else if(tab==='menus'){ renderMenuCards(); goPage('pg-menus'); }
   else if(tab==='stats'){ updateStats(); goPage('pg-stats'); }
 }
 
-/* == 주문 렌더링 == */
+/* == 주문 == */
 function renderOrders(){
   const body=document.getElementById('ordersBody');
   if(!orders.length){ body.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">아직 주문이 없습니다</div></div>'; return; }
-  const sorted=[...orders].sort((a,b)=>{ const o={'new':0,'making':1,'done':2}; return (o[a.status]||0)-(o[b.status]||0); });
+  const sorted=[...orders].sort((a,b)=>({'new':0,'making':1,'done':2}[a.status]||0)-({'new':0,'making':1,'done':2}[b.status]||0));
   body.innerHTML=sorted.map(o=>{
     const usd=(o.total/exchangeRate).toFixed(2);
     const items=o.items?o.items.map(i=>i.name+' x'+i.qty).join(', '):'';
-    const btns=o.status==='new'
-      ?'<button class="oc-btn accept" onclick="setStatus('+o.id+','making')">수락</button>'
-      :o.status==='making'
-      ?'<button class="oc-btn complete" onclick="setStatus('+o.id+','done')">완료</button>'
-      :'<span style="font-size:13px;color:var(--muted)">완료</span>';
-    return '<div class="order-card status-'+o.status+'">'
-      +'<div class="oc-head"><span class="oc-no">#'+o.no+'</span><span class="oc-time">'+o.time+'</span></div>'
-      +'<div class="oc-items">'+items+'</div>'
-      +'<div class="oc-foot">'
-      +'<div>'
-      +'<span class="oc-usdw">$'+usd+' USDW</span>'
-      +'<span class="oc-won">₩'+o.total.toLocaleString()+'</span>'
-      +'</div>'
-      +btns+'</div></div>';
+    const btn=o.status==='new'?'<button class="oc-btn accept" onclick="setStatus('+o.id+',\'making\')">수락</button>':o.status==='making'?'<button class="oc-btn complete" onclick="setStatus('+o.id+',\'done\')">완료</button>':'<span style="font-size:12px;color:var(--muted)">완료됨</span>';
+    return '<div class="order-card status-'+o.status+'"><div class="oc-head"><span class="oc-no">#'+o.no+'</span><span class="oc-time">'+o.time+'</span></div><div class="oc-items">'+items+'</div><div class="oc-foot"><div><div class="oc-usdw">$'+usd+' USDW</div><div class="oc-won">≈ ₩'+o.total.toLocaleString()+'</div></div>'+btn+'</div></div>';
   }).join('');
 }
-
 async function setStatus(id,status){
-  const o=orders.find(x=>x.id===id); if(!o) return;
+  const o=orders.find(x=>x.id===id); if(!o)return;
   o.status=status; renderOrders(); updateStats();
   if(o.serverId) await api('PUT','/api/orders/'+o.serverId+'/status',{status});
 }
 
-/* == 메뉴 카드 (달러 위주 UI) == */
+/* == 메뉴 == */
 function renderMenuCards(){
   const cnt=document.getElementById('menuCount'); if(cnt) cnt.textContent='메뉴 '+menus.length+'개';
-  const grid=document.getElementById('menuCards'); if(!grid) return;
+  const grid=document.getElementById('menuCards'); if(!grid)return;
   if(!menus.length){ grid.innerHTML='<div style="text-align:center;padding:32px;color:var(--muted)">메뉴가 없습니다<br><small>+ 메뉴 추가 버튼을 눌러주세요</small></div>'; return; }
   grid.innerHTML=menus.map(m=>{
     const usd=(m.price/exchangeRate).toFixed(2);
-    return '<div class="menu-card'+(m.soldout?' soldout':'')+'">'
-      +'<div class="mc-emoji">'+(m.emoji||'🍽')+'</div>'
-      +'<div class="mc-info">'
-      +'<div class="mc-name">'+m.name+'</div>'
-      +'<div class="mc-cat">'+m.cat+'</div>'
-      +'<div class="mc-price-wrap">'
-      +'<span class="mc-usdw">$'+usd+'</span>'
-      +'<span class="mc-usdw-label"> USDW</span>'
-      +'<span class="mc-won">₩'+m.price.toLocaleString()+'</span>'
-      +'</div>'
-      +'<div class="mc-reward">'+m.reward+'x OZ · '+(m.desc||'')+'</div>'
-      +'</div>'
-      +'<div class="mc-actions">'
-      +(m.soldout?'<button class="mc-btn" onclick="toggleSoldout('+m.id+')">품절해제</button>':'<button class="mc-btn warn" onclick="toggleSoldout('+m.id+')">품절</button>')
-      +'<button class="mc-btn del" onclick="delMenu('+m.id+')">삭제</button>'
-      +'</div></div>';
+    return '<div class="menu-card'+(m.soldout?' soldout':'')+'"><div class="mc-emoji">'+(m.emoji||'🍽')+'</div><div class="mc-info"><div class="mc-name">'+m.name+'</div><div class="mc-cat">'+m.cat+'</div><div class="mc-price-wrap"><span class="mc-usdw">$'+usd+'</span><span class="mc-usdw-label"> USDW</span><span class="mc-won"> ≈ ₩'+m.price.toLocaleString()+'</span></div><div class="mc-reward">'+m.reward+'x OZ · '+(m.desc||'')+'</div></div><div class="mc-actions">'+(m.soldout?'<button class="mc-btn" onclick="toggleSoldout('+m.id+')">품절해제</button>':'<button class="mc-btn warn" onclick="toggleSoldout('+m.id+')">품절</button>')+'<button class="mc-btn del" onclick="delMenu('+m.id+')">삭제</button></div></div>';
   }).join('');
 }
-
 function toggleSoldout(id){ const m=menus.find(x=>x.id===id); if(m){ m.soldout=!m.soldout; renderMenuCards(); saveMenus(); } }
-function delMenu(id){ if(!confirm('삭제할까요?')) return; menus=menus.filter(x=>x.id!==id); renderMenuCards(); saveMenus(); }
+function delMenu(id){ if(!confirm('삭제할까요?'))return; menus=menus.filter(x=>x.id!==id); renderMenuCards(); saveMenus(); }
 function saveMenus(){
   localStorage.setItem('wizpos_menus',JSON.stringify(menus));
-  if(store&&store.serverId){ api('PUT','/api/stores/'+store.serverId+'/menus',{menus:menus.map(m=>({name:m.name,cat:m.cat,emoji:m.emoji,price:m.price,reward:m.reward,soldout:m.soldout,desc:m.desc||''}))}); }
+  if(store&&store.serverId) api('PUT','/api/stores/'+store.serverId+'/menus',{menus:menus.map(m=>({name:m.name,cat:m.cat,emoji:m.emoji,price:m.price,reward:m.reward,soldout:m.soldout,desc:m.desc||''}))});
 }
 
 /* == 메뉴 추가 모달 == */
@@ -771,16 +230,16 @@ function closeAddMenu(){
   ['mName','mCat','mEmoji','mPrice','mPriceUsd','mPriceUsdw','mReward','mDesc'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
 }
 function syncPrice(from){
-  const w=document.getElementById('mPrice'), d=document.getElementById('mPriceUsd'), u=document.getElementById('mPriceUsdw');
-  if(from==='won'){ const v=parseFloat(w.value)||0; if(d) d.value=v?(v/exchangeRate).toFixed(2):''; if(u) u.value=v?(v/exchangeRate).toFixed(2)+' USDW':''; }
-  else { const v=parseFloat(d.value)||0; if(w) w.value=v?Math.round(v*exchangeRate):''; if(u) u.value=v?v.toFixed(2)+' USDW':''; }
+  const w=document.getElementById('mPrice'),d=document.getElementById('mPriceUsd'),u=document.getElementById('mPriceUsdw');
+  if(from==='won'){ const v=parseFloat(w.value)||0; if(d)d.value=v?(v/exchangeRate).toFixed(2):''; if(u)u.value=v?(v/exchangeRate).toFixed(2)+' USDW':''; }
+  else { const v=parseFloat(d.value)||0; if(w)w.value=v?Math.round(v*exchangeRate):''; if(u)u.value=v?v.toFixed(2)+' USDW':''; }
 }
 function saveMenu(){
   const name=document.getElementById('mName').value.trim();
   const price=parseInt(document.getElementById('mPrice').value);
   if(!name||!price){ alert('메뉴명과 가격은 필수입니다.'); return; }
-  const newId=menus.length?Math.max(...menus.map(m=>m.id))+1:1;
-  menus.push({id:newId,name,cat:document.getElementById('mCat').value||'기타',emoji:document.getElementById('mEmoji').value||'🍽',price,reward:parseFloat(document.getElementById('mReward').value)||1,desc:document.getElementById('mDesc').value||'',soldout:false});
+  const id=menus.length?Math.max(...menus.map(m=>m.id))+1:1;
+  menus.push({id,name,cat:document.getElementById('mCat').value||'기타',emoji:document.getElementById('mEmoji').value||'🍽',price,reward:parseFloat(document.getElementById('mReward').value)||1,desc:document.getElementById('mDesc').value||'',soldout:false});
   renderMenuCards(); saveMenus(); closeAddMenu();
 }
 
@@ -790,17 +249,14 @@ function updateStats(){
   const total=done.reduce((s,o)=>s+o.total,0);
   const oz=done.reduce((s,o)=>s+o.oz,0);
   const el=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
-  el('statSales','₩'+total.toLocaleString());
+  el('statSales','$'+(total/exchangeRate).toFixed(2)+' / ₩'+total.toLocaleString());
   el('statCount',done.length+'건');
   el('statOZ',oz.toFixed(1)+' OZ');
   el('statMenus',menus.filter(m=>!m.soldout).length+'개');
   const txList=document.getElementById('txList');
   if(txList){
     if(!done.length){ txList.innerHTML='<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">아직 주문 내역이 없습니다</div>'; return; }
-    txList.innerHTML=[...done].reverse().map(o=>{
-      const usd=(o.total/exchangeRate).toFixed(2);
-      return '<div class="tx-row"><div class="tx-left"><div class="tx-items">'+o.items.map(i=>i.name+' x'+i.qty).join(', ')+'</div><div class="tx-no">#'+o.no+' · '+o.time+'</div></div><div class="tx-right"><div class="tx-usdw">$'+usd+' USDW</div><div class="tx-won">₩'+o.total.toLocaleString()+'</div></div></div>';
-    }).join('');
+    txList.innerHTML=[...done].reverse().map(o=>'<div class="tx-row"><div class="tx-left"><div class="tx-items">'+o.items.map(i=>i.name+' x'+i.qty).join(', ')+'</div><div class="tx-no">#'+o.no+' · '+o.time+'</div></div><div class="tx-right"><div class="tx-usdw">$'+(o.total/exchangeRate).toFixed(2)+' USDW</div><div class="tx-won">≈ ₩'+o.total.toLocaleString()+'</div></div></div>').join('');
   }
 }
 
@@ -810,7 +266,7 @@ function connectWS(storeId){
   ws=new WebSocket('wss://pos-api.wizclass.net/ws?storeId='+storeId);
   ws.onopen=()=>console.log('WS 연결');
   ws.onmessage=(e)=>{
-    try {
+    try{
       const msg=JSON.parse(e.data);
       if(msg.type==='new_order'&&msg.order){
         const o=msg.order;
@@ -821,9 +277,8 @@ function connectWS(storeId){
       }
     }catch(_){}
   };
-  ws.onclose=()=>{ setTimeout(()=>{ if(store&&store.serverId) connectWS(store.serverId); },5000); };
+  ws.onclose=()=>{ setTimeout(()=>{ if(store&&store.serverId)connectWS(store.serverId); },5000); };
 }
-
 async function loadOrders(){
   const data=await api('GET','/api/orders/'+store.serverId+'?limit=50');
   if(data&&data.orders){
@@ -834,14 +289,331 @@ async function loadOrders(){
 
 /* == 초기화 == */
 window.addEventListener('DOMContentLoaded',function(){
-  const saved=localStorage.getItem('wizpay_addr')||localStorage.getItem('wizpos_addr');
+  const saved=localStorage.getItem('wizpos_addr');
   if(saved&&window.ethereum){
     window.ethereum.request({method:'eth_accounts'}).then(a=>{ if(a.length){ walletAddr=a[0]; afterConnect(); } }).catch(()=>{});
   }
 });
+</script>
 
+<style>
+:root{--bg:#f5f5f5;--surface:#fff;--border:#e8e8e8;--accent:#00a86b;--text:#111;--muted:#888;--warn:#e03e1a;--gold:#b8860b;--purple:#5b2be8}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif}
+body{max-width:430px;margin:0 auto}
+.page{display:none;min-height:100vh;flex-direction:column}
+.page.on{display:flex}
+
+/* 설정 버튼 */
+.cfg-wrap{position:absolute;top:16px;right:16px;z-index:100}
+.cfg-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface);border:2px solid var(--border);border-radius:24px;padding:9px 16px;cursor:pointer;font-size:16px;font-weight:700;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.08);line-height:1}
+.cfg-btn:active{opacity:.75}
+.cfg-menu{display:none;position:absolute;top:calc(100%+8px);right:0;background:var(--surface);border:2px solid var(--border);border-radius:14px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:200;overflow:hidden}
+.cfg-menu.on{display:block}
+.cfg-sec{padding:8px 14px 4px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.cfg-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border)}
+.cfg-row:last-child{border-bottom:none}
+.cfg-row:active{opacity:.7}
+.cfg-row.red{color:var(--warn)}
+.cfg-chk{color:var(--accent);font-weight:900}
+.cfg-ov{display:none;position:fixed;inset:0;z-index:99}
+.cfg-ov.on{display:block}
+
+/* 지갑 연결 */
+#pg-wallet{align-items:center;justify-content:center;padding:40px 24px;background:var(--bg);position:relative}
+.logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:52px;letter-spacing:-1px;line-height:1;margin-bottom:8px}
+.logo span{color:var(--accent)}
+.tagline{font-size:13px;color:var(--muted);letter-spacing:3px;margin-bottom:16px}
+.wiz-badge{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--border);border-radius:20px;padding:6px 16px;margin-bottom:44px}
+.wiz-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.wiz-name{font-size:13px;font-weight:700;color:var(--accent)}
+.wiz-by{font-size:12px;color:var(--muted)}
+.wallet-box{width:100%;max-width:340px}
+.err-box{background:#fff0ee;border:2px solid var(--warn);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--warn);margin-bottom:16px;display:none}
+.load-box{text-align:center;padding:12px;font-size:14px;color:var(--muted);display:none}
+.w-btn{width:100%;display:flex;align-items:center;gap:16px;background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;text-align:left;font-family:'Noto Sans KR',sans-serif}
+.w-btn:active{opacity:.75}
+.w-btn.mm{border-color:#f6851b}
+.w-btn.tw{border-color:#3375ff}
+.w-btn.dex{border-color:#7c3aed}
+.w-btn-icon{font-size:30px;flex-shrink:0}
+.w-btn-name{font-size:17px;font-weight:700;color:var(--text)}
+.w-btn-name.dex{color:#7c3aed}
+.w-btn-desc{font-size:13px;color:var(--muted)}
+.w-btn-arr{margin-left:auto;font-size:18px;color:var(--muted)}
+.net-note{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);line-height:1.8}
+.guest-btn{width:100%;padding:16px;background:transparent;border:2px solid var(--border);border-radius:14px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:4px}
+
+/* 매장 등록 */
+#pg-register{padding:52px 24px 40px;background:var(--bg)}
+.reg-title{font-size:26px;font-weight:900;margin-bottom:6px}
+.reg-sub{font-size:14px;color:var(--muted);margin-bottom:24px}
+.connected-addr{display:flex;align-items:center;gap:8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:20px}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.conn-addr{font-family:monospace;font-size:14px;font-weight:700;color:var(--accent)}
+.form-group{margin-bottom:16px}
+.form-label{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px;display:block}
+.form-input,.form-select{width:100%;padding:14px;background:var(--surface);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:'Noto Sans KR',sans-serif}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--accent)}
+.reg-btn{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
+
+/* 앱 헤더/탭 */
+.app-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0}
+.app-logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:22px}
+.app-logo span{color:var(--accent)}
+.app-store{font-size:13px;color:var(--muted);font-weight:600}
+.chain-live{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--accent)}
+.chain-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+.tab-bar{display:flex;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0}
+.tab-btn{flex:1;padding:14px;border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;font-family:'Noto Sans KR',sans-serif}
+.tab-btn.on{color:var(--accent);border-bottom-color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:8px}
+
+/* 주문 */
+#pg-orders{background:var(--bg)}
+.orders-body{flex:1;overflow-y:auto;padding:16px}
+.empty-state{text-align:center;padding:60px 0;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-text{font-size:15px}
+.order-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px}
+.order-card.status-new{border-color:var(--accent)}
+.order-card.status-making{border-color:#f59e0b}
+.order-card.status-done{opacity:.6}
+.oc-head{display:flex;justify-content:space-between;margin-bottom:8px}
+.oc-no{font-size:15px;font-weight:700}
+.oc-time{font-size:13px;color:var(--muted)}
+.oc-items{font-size:14px;color:var(--muted);margin-bottom:10px}
+.oc-foot{display:flex;justify-content:space-between;align-items:center}
+.oc-usdw{font-size:20px;font-weight:900;color:var(--text)}
+.oc-won{font-size:12px;color:var(--muted)}
+.oc-btn{padding:9px 18px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif}
+.oc-btn.accept{background:var(--accent);color:#fff}
+.oc-btn.complete{background:#f59e0b;color:#fff}
+
+/* 메뉴 관리 */
+#pg-menus{background:var(--bg)}
+.menus-body{flex:1;overflow-y:auto;padding:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:15px;font-weight:700;color:var(--muted)}
+.add-btn{padding:8px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif}
+.menu-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+.menu-card.soldout{opacity:.4}
+.mc-emoji{font-size:28px;width:50px;height:50px;background:var(--bg);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mc-info{flex:1;min-width:0}
+.mc-name{font-size:16px;font-weight:700;margin-bottom:2px}
+.mc-cat{font-size:12px;color:var(--muted);margin-bottom:6px}
+.mc-price-wrap{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px;margin-bottom:3px}
+.mc-usdw{font-size:20px;font-weight:900;color:var(--text)}
+.mc-usdw-label{font-size:13px;color:var(--muted);font-weight:500}
+.mc-won{font-size:12px;color:var(--muted);font-weight:500}
+.mc-reward{font-size:12px;color:var(--muted)}
+.mc-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.mc-btn{padding:7px 12px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap}
+.mc-btn.warn{border-color:var(--warn);color:var(--warn)}
+.mc-btn.del{border-color:#ddd;color:#bbb}
+
+/* 통계 */
+#pg-stats{background:var(--bg)}
+.stats-body{flex:1;overflow-y:auto;padding:16px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px}
+.stat-label{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.stat-val{font-size:20px;font-weight:900}
+.stat-val.green{color:var(--accent)}
+.stat-val.purple{color:var(--purple)}
+.stat-val.gold{color:var(--gold)}
+.tx-section{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px}
+.tx-header{font-size:15px;font-weight:700;margin-bottom:14px}
+.tx-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.tx-row:last-child{border-bottom:none}
+.tx-items{font-size:14px;margin-bottom:2px}
+.tx-no{font-size:12px;color:var(--muted)}
+.tx-usdw{font-size:16px;font-weight:900;color:var(--text);text-align:right}
+.tx-won{font-size:12px;color:var(--muted);text-align:right}
+
+/* 메뉴 추가 모달 */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:flex-end;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 24px 40px;width:100%;max-width:430px;max-height:90vh;overflow-y:auto}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:20px;font-weight:900;margin-bottom:20px}
+.modal-form-group{margin-bottom:14px}
+.modal-label{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px;display:block}
+.modal-input{width:100%;padding:13px 14px;background:var(--bg);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:'Noto Sans KR',sans-serif}
+.modal-input:focus{outline:none;border-color:var(--accent)}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.modal-save{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
+.modal-cancel{width:100%;padding:13px;background:transparent;border:2px solid var(--border);border-radius:12px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: 지갑 연결 -->
+<div class="page on" id="pg-wallet">
+  <div class="cfg-wrap">
+    <button class="cfg-btn" id="cfgBtn" onclick="cfgToggle()">
+      <span id="cfgLang" style="font-size:20px;">🇰🇷</span>
+      <span id="cfgThemeIcon" style="font-size:16px;">☀️</span>
+    </button>
+    <div class="cfg-menu" id="cfgMenu">
+      <div class="cfg-sec">언어 / Language</div>
+      <div class="cfg-row" onclick="cfgLang('ko')"><span>🇰🇷 한국어</span><span class="cfg-chk" id="lk">✓</span></div>
+      <div class="cfg-row" onclick="cfgLang('en')"><span>🇺🇸 English</span><span class="cfg-chk" id="le" style="display:none">✓</span></div>
+      <div class="cfg-row" onclick="cfgLang('zh')"><span>🇨🇳 中文</span><span class="cfg-chk" id="lz" style="display:none">✓</span></div>
+      <div class="cfg-sec" style="margin-top:4px">테마 / Theme</div>
+      <div class="cfg-row" onclick="cfgTheme('light')"><span>☀️ 라이트</span><span class="cfg-chk" id="tl">✓</span></div>
+      <div class="cfg-row" onclick="cfgTheme('dark')"><span>🌙 다크</span><span class="cfg-chk" id="td" style="display:none">✓</span></div>
+      <div class="cfg-sec" style="margin-top:4px">서비스</div>
+      <div class="cfg-row" onclick="cfgDex()"><span>💱 WizDEX</span></div>
+      <div class="cfg-row red" onclick="cfgLogout()"><span>⏏ 로그아웃</span></div>
+    </div>
+  </div>
+  <div class="cfg-ov" id="cfgOv" onclick="cfgClose()"></div>
+
+  <div class="logo">Wiz<span>POS</span></div>
+  <div class="tagline"><span id="i-tagline">더 편한 글로벌 올인원 포스</span></div>
+  <div class="wiz-badge"><div class="wiz-dot"></div><span class="wiz-name">WizChain</span><span class="wiz-by">by WizClass</span></div>
+  <div class="wallet-box">
+    <div class="err-box" id="errBox"></div>
+    <div class="load-box" id="loadBox">연결 중...</div>
+    <button class="w-btn mm" onclick="connectMM()">
+      <span class="w-btn-icon">🦊</span>
+      <div><div class="w-btn-name">MetaMask</div><div class="w-btn-desc"><span id="i-mm">브라우저 익스텐션 / 모바일 앱</span></div></div>
+      <span class="w-btn-arr">→</span>
+    </button>
+    <button class="w-btn tw" onclick="connectTW()">
+      <span class="w-btn-icon">🛡️</span>
+      <div><div class="w-btn-name">Trust Wallet</div><div class="w-btn-desc"><span id="i-tw">모바일 앱으로 연결</span></div></div>
+      <span class="w-btn-arr">→</span>
+    </button>
+    <button class="w-btn dex" onclick="cfgDex()">
+      <span class="w-btn-icon">💱</span>
+      <div><div class="w-btn-name dex">WizDEX</div><div class="w-btn-desc"><span id="i-dex">WizChain 탈중앙화 거래소</span></div></div>
+      <span class="w-btn-arr">→</span>
+    </button>
+    <button class="guest-btn" onclick="guestMode()">지갑 없이 둘러보기</button>
+    <div class="net-note">WizChain (Chain ID: 10243)<br>연결 시 자동으로 네트워크 전환</div>
+  </div>
+</div>
+
+<!-- PAGE 2: 매장 등록 -->
+<div class="page" id="pg-register">
+  <div class="reg-title">매장 등록</div>
+  <div class="reg-sub">처음 이용하시나요? 매장 정보를 입력해주세요.</div>
+  <div class="connected-addr"><div class="conn-dot"></div><span class="conn-addr" id="connAddr">0x...</span></div>
+  <div class="form-group"><label class="form-label">매장명 *</label><input class="form-input" id="regName" placeholder="예: 위즈카페 강남점"></div>
+  <div class="form-group"><label class="form-label">카테고리</label>
+    <select class="form-select" id="regCat">
+      <option>☕ 카페</option><option>🍖 한식</option><option>🍕 양식</option>
+      <option>🥐 베이커리</option><option>🍜 면류</option><option>🍱 분식</option><option>기타</option>
+    </select>
+  </div>
+  <div class="form-group"><label class="form-label">주소</label><input class="form-input" id="regAddr" placeholder="예: 서울 강남구 테헤란로 123"></div>
+  <button class="reg-btn" onclick="registerStore()">매장 등록하기 →</button>
+</div>
+
+<!-- PAGE 3: 주문 관리 -->
+<div class="page" id="pg-orders">
+  <div class="app-header">
+    <div><div class="app-logo">Wiz<span>POS</span></div><div class="app-store" id="storeName">매장명</div></div>
+    <div class="header-right"><div class="chain-live"><div class="chain-dot"></div>WizChain</div></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn on" onclick="switchTab('orders',this)">📋 주문</button>
+    <button class="tab-btn" onclick="switchTab('menus',this)">🍽 메뉴</button>
+    <button class="tab-btn" onclick="switchTab('stats',this)">📊 매출</button>
+  </div>
+  <div class="orders-body" id="ordersBody">
+    <div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">아직 주문이 없습니다</div></div>
+  </div>
+</div>
+
+<!-- PAGE 4: 메뉴 관리 -->
+<div class="page" id="pg-menus">
+  <div class="app-header">
+    <div><div class="app-logo">Wiz<span>POS</span></div><div class="app-store" id="storeNameM">매장명</div></div>
+    <div class="header-right"><div class="chain-live"><div class="chain-dot"></div>WizChain</div></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn" onclick="switchTab('orders',this)">📋 주문</button>
+    <button class="tab-btn on" onclick="switchTab('menus',this)">🍽 메뉴</button>
+    <button class="tab-btn" onclick="switchTab('stats',this)">📊 매출</button>
+  </div>
+  <div class="menus-body">
+    <div class="section-header">
+      <div class="section-title" id="menuCount">메뉴 0개</div>
+      <button class="add-btn" onclick="openAddMenu()">+ 메뉴 추가</button>
+    </div>
+    <div id="menuCards"></div>
+  </div>
+</div>
+
+<!-- PAGE 5: 매출 통계 -->
+<div class="page" id="pg-stats">
+  <div class="app-header">
+    <div><div class="app-logo">Wiz<span>POS</span></div><div class="app-store" id="storeNameS">매장명</div></div>
+    <div class="header-right"><div class="chain-live"><div class="chain-dot"></div>WizChain</div></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn" onclick="switchTab('orders',this)">📋 주문</button>
+    <button class="tab-btn" onclick="switchTab('menus',this)">🍽 메뉴</button>
+    <button class="tab-btn on" onclick="switchTab('stats',this)">📊 매출</button>
+  </div>
+  <div class="stats-body">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">오늘 매출</div><div class="stat-val green" id="statSales">$0</div></div>
+      <div class="stat-card"><div class="stat-label">주문 건수</div><div class="stat-val purple" id="statCount">0건</div></div>
+      <div class="stat-card"><div class="stat-label">OZ 지급</div><div class="stat-val gold" id="statOZ">0 OZ</div></div>
+      <div class="stat-card"><div class="stat-label">활성 메뉴</div><div class="stat-val" id="statMenus">0개</div></div>
+    </div>
+    <div class="tx-section">
+      <div class="tx-header">주문 내역</div>
+      <div id="txList"><div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">아직 주문 내역이 없습니다</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 메뉴 추가 모달 -->
+<div class="modal-bg" id="addMenuModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">메뉴 추가</div>
+    <div class="modal-form-group"><label class="modal-label">메뉴명 *</label><input class="modal-input" id="mName" placeholder="예: 아메리카노"></div>
+    <div class="modal-row">
+      <div class="modal-form-group"><label class="modal-label">카테고리</label><input class="modal-input" id="mCat" placeholder="예: 커피"></div>
+      <div class="modal-form-group"><label class="modal-label">이모지</label><input class="modal-input" id="mEmoji" placeholder="☕" style="font-size:20px;text-align:center"></div>
+    </div>
+    <div class="modal-form-group">
+      <label class="modal-label">가격 * (달러 기준)</label>
+      <div style="margin-bottom:10px;">
+        <div style="position:relative;">
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:900;color:var(--text);">$</span>
+          <input class="modal-input" id="mPriceUsd" type="number" placeholder="3.33" style="padding-left:30px;font-size:20px;font-weight:900;" step="0.01" oninput="syncPrice('usd')">
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;text-align:right">= USDW 결제 금액</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap;">≈ 원화환산</span>
+        <div style="position:relative;flex:1">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);font-weight:700;">₩</span>
+          <input class="modal-input" id="mPrice" type="number" placeholder="4500" style="padding-left:28px;font-size:14px;color:var(--muted);" oninput="syncPrice('won')">
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:5px;font-size:12px;color:var(--muted);">실시간 환율: $1 = <span id="currentRate">1,350</span>원</div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-form-group"><label class="modal-label">OZ 배율</label><input class="modal-input" id="mReward" type="number" placeholder="1" step="0.5"></div>
+      <div class="modal-form-group"><label class="modal-label">USDW 금액</label><input class="modal-input" id="mPriceUsdw" readonly placeholder="자동계산" style="background:var(--bg);color:var(--accent);font-weight:700;"></div>
+    </div>
+    <div class="modal-form-group"><label class="modal-label">설명</label><input class="modal-input" id="mDesc" placeholder="예: 진한 에스프레소"></div>
+    <button class="modal-save" onclick="saveMenu()">저장</button>
+    <button class="modal-cancel" onclick="closeAddMenu()">취소</button>
+  </div>
+</div>
+
+<script>
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
-
-
-
-
+</script>
+</body>
+</html>
