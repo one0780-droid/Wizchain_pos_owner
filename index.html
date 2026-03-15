@@ -55,6 +55,120 @@
 
 <!-- 메인 JS (head에서 먼저 로드) -->
 <script>
+
+
+/* == 체인 상태 확인 == */
+async function checkAndShowChain(addr, barSuffix, walletType) {
+  const bar = document.getElementById('walletBar'+barSuffix);
+  if(!bar) return;
+  bar.classList.add('on');
+
+  const icon = document.getElementById('wbIcon'+barSuffix);
+  if(icon) icon.textContent = walletType==='trust' ? '🛡️' : '🦊';
+
+  const addrEl = document.getElementById('wbAddr'+barSuffix);
+  if(addrEl) addrEl.textContent = addr.slice(0,6)+'...'+addr.slice(-4);
+
+  try {
+    const chainId = await window.ethereum.request({method:'eth_chainId'});
+    const isWizChain = chainId === '0x27F3';
+    const chainEl = document.getElementById('wbChain'+barSuffix);
+
+    if(isWizChain) {
+      // WizChain 정상
+      if(chainEl){
+        chainEl.textContent = 'WizChain';
+        chainEl.closest('.wb-chain').style.background = '#edfaf3';
+        chainEl.closest('.wb-chain').style.borderColor = '#b2edcf';
+        chainEl.style.color = 'var(--accent)';
+      }
+      // 잔액 로드
+      loadWalletBalances(addr, barSuffix);
+    } else {
+      // 다른 체인 → 경고 표시
+      const chainNames = {
+        '0x1':'Ethereum','0x38':'BNB Chain','0x89':'Polygon',
+        '0xa86a':'Avalanche','0xa':'Optimism','0xa4b1':'Arbitrum'
+      };
+      const name = chainNames[chainId] || 'Chain '+parseInt(chainId,16);
+      if(chainEl){
+        chainEl.textContent = '⚠️ '+name;
+        chainEl.closest('.wb-chain').style.background = '#fff0ee';
+        chainEl.closest('.wb-chain').style.borderColor = '#e03e1a';
+        chainEl.style.color = '#e03e1a';
+      }
+      // 잔액 표시 불가
+      ['wbUSDW','wbOZ','wbWCN'].forEach(id=>{
+        const el=document.getElementById(id+barSuffix);
+        if(el) el.textContent = '--';
+      });
+      // WizChain 전환 유도 버튼 표시
+      showChainSwitchAlert(barSuffix);
+    }
+
+    // 체인 변경 감지
+    window.ethereum.on('chainChanged', ()=> location.reload());
+
+  } catch(_){}
+}
+
+function showChainSwitchAlert(suffix) {
+  const bar = document.getElementById('walletBar'+suffix);
+  if(!bar) return;
+  // 기존 알림 있으면 제거
+  const existing = bar.querySelector('.chain-alert');
+  if(existing) existing.remove();
+
+  const alert = document.createElement('div');
+  alert.className = 'chain-alert';
+  alert.style.cssText = 'margin-top:8px;padding:8px 12px;background:#fff0ee;border:1.5px solid #e03e1a;border-radius:10px;display:flex;align-items:center;justify-content:space-between;';
+  alert.innerHTML = '<span style="font-size:12px;color:#e03e1a;font-weight:600;">WizChain으로 전환 필요</span>'
+    +'<button onclick="switchToWizChain()" style="padding:5px 12px;background:#e03e1a;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:sans-serif;">전환</button>';
+  bar.appendChild(alert);
+}
+
+async function switchToWizChain() {
+  try {
+    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x27F3'}]});
+  } catch(e) {
+    if(e.code===4902||e.code===-32603){
+      try {
+        await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
+          chainId:'0x27F3', chainName:'WizChain',
+          nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},
+          rpcUrls:['https://rpc.wizclass.net']
+        }]});
+      } catch(_){}
+    }
+  }
+}
+
+async function loadWalletBalances(addr, suffix) {
+  try {
+    if(typeof ethers==='undefined') return;
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    // WCN 네이티브
+    const wcnBal = await provider.getBalance(addr);
+    const wcnEl = document.getElementById('wbWCN'+suffix);
+    if(wcnEl) wcnEl.textContent = parseFloat(ethers.formatEther(wcnBal)).toFixed(2);
+    // USDW
+    const usdwC = new ethers.Contract(
+      '0x1234B0663b82b260DebEe961C2b5DBfC79bADdBd',
+      ['function balanceOf(address) view returns (uint256)'], provider
+    );
+    const usdwBal = await usdwC.balanceOf(addr);
+    const usdwEl = document.getElementById('wbUSDW'+suffix);
+    if(usdwEl) usdwEl.textContent = parseFloat(ethers.formatUnits(usdwBal,18)).toFixed(2);
+    // OZ (추후)
+    const ozEl = document.getElementById('wbOZ'+suffix);
+    if(ozEl) ozEl.textContent = '0.00';
+  } catch(e) {
+    ['wbUSDW','wbOZ','wbWCN'].forEach(id=>{
+      const el=document.getElementById(id+suffix); if(el) el.textContent='--';
+    });
+  }
+}
+
 /* == API == */
 const API = 'https://pos-api.wizclass.net';
 async function api(method, path, body) {
@@ -125,9 +239,22 @@ async function connectMM(){
 }
 async function connectTW(){
   hideErr(); const env=getEnv();
-  const twUrl='https://link.trustwallet.com/open_url?coin_id=60&url='+encodeURIComponent(location.href);
-  if(env.isKakao||env.isSamsung||(env.isMobile&&!env.isMetaMask&&!env.isTrust)){ window.location.href=twUrl; return; }
-  const p=await detectEthereum(); if(!p){ window.location.href=twUrl; return; }
+  // Trust Wallet 내장브라우저면 바로 연결
+  if(env.isTrust){
+    const p=await detectEthereum(); if(p){ await connectWallet(p); return; }
+  }
+  // 그 외 → MetaMask 딥링크와 동일하게 처리 (범용)
+  if(env.isMobile && !env.isMetaMask && !env.isTrust){
+    // trust:// 딥링크 시도 후 실패하면 metamask 딥링크
+    const trustUrl='trust://browser?url='+encodeURIComponent(location.href);
+    const mmUrl='https://metamask.app.link/dapp/'+location.href.replace(/^https?:\/\//,'');
+    // 앱 설치 여부 판단 불가 → trust 시도
+    window.location.href=trustUrl;
+    // 1.5초 후 앱 안 열렸으면 MetaMask로
+    setTimeout(()=>{ window.location.href=mmUrl; }, 1500);
+    return;
+  }
+  const p=await detectEthereum(); if(!p){ openMetaMask(); return; }
   await connectWallet(p);
 }
 
@@ -175,6 +302,13 @@ async function registerStore(){
 /* == 대시보드 == */
 function enterDashboard(){
   ['storeName','storeNameM','storeNameS'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent=store.name; });
+  if(walletAddr){
+    const env=getEnv();
+    const wtype=env.isTrust?'trust':'metamask';
+    checkAndShowChain(walletAddr, 'O', wtype);
+    // 모든 페이지 지갑바 동기화
+    ['O','M','S'].forEach(s=>{ checkAndShowChain(walletAddr, s, wtype); });
+  }
   fetchRate();
   goPage('pg-orders');
   renderOrders();
@@ -349,7 +483,7 @@ body{max-width:430px;margin:0 auto}
 .w-btn-desc{font-size:13px;color:var(--muted)}
 .w-btn-arr{margin-left:auto;font-size:18px;color:var(--muted)}
 .net-note{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);line-height:1.8}
-.guest-btn{width:100%;padding:16px;background:transparent;border:2px solid var(--border);border-radius:14px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:4px}
+.guest-btn{width:100%;padding:16px;background:transparent;border:2px solid var(--border);border-radius:14px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:sans-serif;margin-top:4px}
 
 /* 매장 등록 */
 #pg-register{padding:52px 24px 40px;background:var(--bg)}
@@ -362,7 +496,7 @@ body{max-width:430px;margin:0 auto}
 .form-label{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px;display:block}
 .form-input,.form-select{width:100%;padding:14px;background:var(--surface);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:'Noto Sans KR',sans-serif}
 .form-input:focus,.form-select:focus{outline:none;border-color:var(--accent)}
-.reg-btn{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
+.reg-btn{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:sans-serif;margin-top:8px}
 
 /* 앱 헤더/탭 */
 .app-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0}
@@ -415,7 +549,7 @@ body{max-width:430px;margin:0 auto}
 .mc-won{font-size:12px;color:var(--muted);font-weight:500}
 .mc-reward{font-size:12px;color:var(--muted)}
 .mc-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
-.mc-btn{padding:7px 12px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap}
+.mc-btn{padding:7px 12px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:sans-serif;white-space:nowrap}
 .mc-btn.warn{border-color:var(--warn);color:var(--warn)}
 .mc-btn.del{border-color:#ddd;color:#bbb}
 
@@ -449,8 +583,25 @@ body{max-width:430px;margin:0 auto}
 .modal-input{width:100%;padding:13px 14px;background:var(--bg);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:'Noto Sans KR',sans-serif}
 .modal-input:focus{outline:none;border-color:var(--accent)}
 .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.modal-save{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
-.modal-cancel{width:100%;padding:13px;background:transparent;border:2px solid var(--border);border-radius:12px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:8px}
+.modal-save{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:sans-serif;margin-top:8px}
+.modal-cancel{width:100%;padding:13px;background:transparent;border:2px solid var(--border);border-radius:12px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:sans-serif;margin-top:8px}
+
+/* 지갑 정보 바 */
+.wallet-bar{display:none;background:var(--surface);border-bottom:2px solid var(--border);padding:10px 16px;flex-shrink:0}
+.wallet-bar.on{display:block}
+.wb-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.wb-row2{display:flex;align-items:center;gap:12px}
+.wb-wallet{display:flex;align-items:center;gap:6px}
+.wb-wallet-icon{font-size:16px}
+.wb-addr{font-family:monospace;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer}
+.wb-chain{display:flex;align-items:center;gap:4px;background:#edfaf3;border:1px solid #b2edcf;border-radius:8px;padding:3px 8px}
+.wb-chain-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+.wb-chain-name{font-size:12px;font-weight:700;color:var(--accent)}
+.wb-balance-item{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px}
+.wb-balance-val{font-size:13px;font-weight:900;color:var(--text)}
+.wb-balance-sym{font-size:11px;color:var(--muted);font-weight:600}
+.wb-loading{font-size:11px;color:var(--muted);animation:pulse 1s infinite}
+
 </style>
 </head>
 <body>
@@ -526,6 +677,90 @@ body{max-width:430px;margin:0 auto}
     <div><div class="app-logo">Wiz<span>POS</span></div><div class="app-store" id="storeName">매장명</div></div>
     <div class="header-right"><div class="chain-live"><div class="chain-dot"></div>WizChain</div></div>
   </div>
+    <!-- 지갑 정보 바 -->
+  <div class="wallet-bar" id="walletBarO">
+    <div class="wb-row1">
+      <div class="wb-wallet">
+        <span class="wb-wallet-icon" id="wbIconO">🦊</span>
+        <span class="wb-addr" id="wbAddrO" onclick="copyAddrO()">0x...</span>
+      </div>
+      <div class="wb-chain">
+        <div class="wb-chain-dot"></div>
+        <span class="wb-chain-name" id="wbChainO">WizChain</span>
+      </div>
+    </div>
+    <div class="wb-row2">
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbUSDWO"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">USDW</span>
+      </div>
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbOZO"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">OZ</span>
+      </div>
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbWCNO"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">WCN</span>
+      </div>
+    </div>
+  </div>
+
+    <!-- 지갑 정보 바 -->
+  <div class="wallet-bar" id="walletBarM">
+    <div class="wb-row1">
+      <div class="wb-wallet">
+        <span class="wb-wallet-icon" id="wbIconM">🦊</span>
+        <span class="wb-addr" id="wbAddrM" onclick="copyAddrO()">0x...</span>
+      </div>
+      <div class="wb-chain">
+        <div class="wb-chain-dot"></div>
+        <span class="wb-chain-name" id="wbChainM">WizChain</span>
+      </div>
+    </div>
+    <div class="wb-row2">
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbUSDWM"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">USDW</span>
+      </div>
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbOZM"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">OZ</span>
+      </div>
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbWCNM"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">WCN</span>
+      </div>
+    </div>
+  </div>
+
+    <!-- 지갑 정보 바 -->
+  <div class="wallet-bar" id="walletBarS">
+    <div class="wb-row1">
+      <div class="wb-wallet">
+        <span class="wb-wallet-icon" id="wbIconS">🦊</span>
+        <span class="wb-addr" id="wbAddrS" onclick="copyAddrO()">0x...</span>
+      </div>
+      <div class="wb-chain">
+        <div class="wb-chain-dot"></div>
+        <span class="wb-chain-name" id="wbChainS">WizChain</span>
+      </div>
+    </div>
+    <div class="wb-row2">
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbUSDWS"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">USDW</span>
+      </div>
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbOZS"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">OZ</span>
+      </div>
+      <div class="wb-balance-item">
+        <span class="wb-balance-val" id="wbWCNS"><span class="wb-loading">···</span></span>
+        <span class="wb-balance-sym">WCN</span>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-bar">
     <button class="tab-btn on" onclick="switchTab('orders',this)">📋 주문</button>
     <button class="tab-btn" onclick="switchTab('menus',this)">🍽 메뉴</button>
