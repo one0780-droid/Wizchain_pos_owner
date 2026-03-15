@@ -289,6 +289,12 @@ async function loadOrders(){
 
 /* == 초기화 == */
 window.addEventListener('DOMContentLoaded',function(){
+  // 함수 존재 확인
+  const el=document.getElementById('fnCheck');
+  if(el){
+    const ok=['connectMM','connectTW','guestMode','cfgToggle'].map(fn=>fn+':'+(typeof window[fn]!=='undefined'?'✅':'❌')).join(' ');
+    el.textContent=ok;
+  }
   const saved=localStorage.getItem('wizpos_addr');
   if(saved&&window.ethereum){
     window.ethereum.request({method:'eth_accounts'}).then(a=>{ if(a.length){ walletAddr=a[0]; afterConnect(); } }).catch(()=>{});
@@ -494,6 +500,7 @@ body{max-width:430px;margin:0 auto}
     </button>
     <button class="guest-btn" onclick="guestMode()">지갑 없이 둘러보기</button>
     <div class="net-note">WizChain (Chain ID: 10243)<br>연결 시 자동으로 네트워크 전환</div>
+    <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;" id="fnCheck"></div>
   </div>
 </div>
 
@@ -613,7 +620,7 @@ body{max-width:430px;margin:0 auto}
 </div>
 
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
+// Service Worker 비활성화
 </script>
 </body>
 </html>
