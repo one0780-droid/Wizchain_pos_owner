@@ -246,6 +246,49 @@ body{max-width:430px;margin:0 auto;position:relative}
 
 </style>
 
+<script>
+/* ==== 설정 (언어/테마) ==== */
+(function(){
+  var lang  = localStorage.getItem('cfg_lang')  || 'ko';
+  var theme = localStorage.getItem('cfg_theme') || 'light';
+  var I18N = {
+    ko:{ tagline:'더 편한 글로벌 올인원 포스', mm:'브라우저 익스텐션 / 모바일 앱', tw:'모바일 앱으로 연결', dex:'WizChain 탈중앙화 거래소' },
+    en:{ tagline:'The Global All-in-One POS', mm:'Browser Extension / Mobile App', tw:'Connect Mobile App', dex:'WizChain DEX Exchange' },
+    zh:{ tagline:'全球一站式POS', mm:'浏览器扩展 / 移动应用', tw:'通过移动应用连接', dex:'WizChain去中心化交易所' },
+  };
+  function applyLang(l) {
+    lang = l; localStorage.setItem('cfg_lang', l);
+    var flags = {ko:'🇰🇷', en:'🇺🇸', zh:'🇨🇳'};
+    var el = document.getElementById('cfgLang');
+    if(el) el.textContent = flags[l];
+    ['lk','le','lz'].forEach(function(id,i){
+      var e=document.getElementById(id);
+      if(e) e.style.display=['ko','en','zh'][i]===l?'inline':'none';
+    });
+    var t=I18N[l]||I18N.ko;
+    var map={'i-tagline':t.tagline,'i-mm':t.mm,'i-tw':t.tw,'i-dex':t.dex};
+    Object.keys(map).forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=map[id]; });
+  }
+  function applyTheme(m) {
+    theme = m; localStorage.setItem('cfg_theme', m);
+    var s=document.getElementById('cfg-theme-style');
+    if(!s){ s=document.createElement('style'); s.id='cfg-theme-style'; document.head.appendChild(s); }
+    s.textContent = m==='dark'
+      ? 'body,html{background:#111!important;color:#f0f0f0!important}.page{background:#111!important}.w-btn{background:#1e1e1e!important;border-color:#333!important}.w-btn-name{color:#f0f0f0!important}.w-btn-desc{color:#999!important}.logo{color:#f0f0f0!important}.tagline{color:#999!important}.wiz-badge{border-color:#333!important}.wiz-by{color:#999!important}.net-note{color:#999!important}.cfg-btn{background:#1e1e1e!important;border-color:#333!important;color:#f0f0f0!important}.cfg-menu{background:#1e1e1e!important;border-color:#333!important}.cfg-row{color:#f0f0f0!important;border-color:#333!important}.app-header,.tab-bar,.menus-body,.orders-body,.stats-body,.order-card,.menu-card,.modal{background:#1e1e1e!important;border-color:#333!important}.mc-name,.oc-no,.tx-items{color:#f0f0f0!important}'
+      : '';
+    var icon=document.getElementById('cfgThemeIcon');
+    if(icon) icon.textContent=m==='dark'?'🌙':'☀️';
+    ['tl','td'].forEach(function(id,i){ var e=document.getElementById(id); if(e) e.style.display=['light','dark'][i]===m?'inline':'none'; });
+  }
+  window.cfgToggle=function(){ var m=document.getElementById('cfgMenu'),o=document.getElementById('cfgOv'); if(!m)return; var on=m.classList.toggle('on'); o.classList.toggle('on',on); };
+  window.cfgClose=function(){ var m=document.getElementById('cfgMenu'),o=document.getElementById('cfgOv'); if(m)m.classList.remove('on'); if(o)o.classList.remove('on'); };
+  window.cfgLang  =function(l){ applyLang(l);  cfgClose(); };
+  window.cfgTheme =function(m){ applyTheme(m); cfgClose(); };
+  window.cfgDex   =function(){ cfgClose(); window.open('https://dex.wizclass.net','_blank'); };
+  window.cfgLogout=function(){ cfgClose(); var msg=lang==='en'?'Logout?':lang==='zh'?'退出登录？':'로그아웃 할까요?'; if(!confirm(msg))return; localStorage.clear(); location.reload(); };
+  document.addEventListener('DOMContentLoaded',function(){ applyLang(lang); applyTheme(theme); });
+})();
+</script>
 </head>
 <body>
 
