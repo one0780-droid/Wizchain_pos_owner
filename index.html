@@ -2,7 +2,16 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- PWA 설정 -->
+  <meta name="theme-color" content="#111111">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="WizPOS">
+  <link rel="manifest" href="manifest.json">
+  <!-- iOS 아이콘 -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23111111'/><text x='50%25' y='58%25' font-size='95' text-anchor='middle' dominant-baseline='middle' font-family='Arial Black' font-weight='900' fill='%2300a86b'>W</text></svg>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WizPOS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
@@ -394,6 +403,24 @@ body{max-width:430px;margin:0 auto;position:relative}
 </div>
 
 <script>
+/* ── API 설정 ── */
+const API = 'https://pos-api.wizclass.net';
+
+async function api(method, path, body) {
+  try {
+    const res = await fetch(API + path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(5000)
+    });
+    return await res.json();
+  } catch(e) {
+    console.warn('API 오류:', e.message);
+    return null;
+  }
+}
+
 /* ── 상태 ── */
 let walletAddr = '';
 let store = null;       // { name, cat, addr, wallet }
@@ -468,13 +495,43 @@ async function connectWallet(provider) {
       }
     }
     localStorage.setItem('wizpos_addr', walletAddr);
-    // 기존 매장 있으면 대시보드, 없으면 매장 등록
+    showLoad(true);
+    // 서버에서 지갑 주소로 매장 조회
+    const data = await api('GET', '/api/stores');
+    if (data && data.stores) {
+      const myStore = data.stores.find(s =>
+        s.wallet_address && s.wallet_address.toLowerCase() === walletAddr.toLowerCase()
+      );
+      if (myStore) {
+        // 서버에 등록된 매장 있음
+        store = { ...myStore, serverId: myStore.id };
+        // 서버에서 메뉴 로드
+        const detail = await api('GET', '/api/stores/' + myStore.id);
+        if (detail && detail.store && detail.store.menus) {
+          menus = detail.store.menus.map(m => ({
+            id: m.id, name: m.name, cat: m.cat,
+            emoji: m.emoji || '🍽', price: m.price,
+            reward: parseFloat(m.reward) || 1,
+            desc: m.description || '', soldout: !!m.soldout
+          }));
+          nextMenuId = menus.length ? Math.max(...menus.map(m=>m.id)) + 1 : 1;
+        }
+        localStorage.setItem('wizpos_store', JSON.stringify(store));
+        localStorage.setItem('wizpos_menus', JSON.stringify(menus));
+        enterDashboard();
+        // WebSocket 연결
+        connectWS(myStore.id);
+        return;
+      }
+    }
+    // 서버에 매장 없으면 로컬 확인
     const savedStore = localStorage.getItem('wizpos_store');
     if (savedStore) {
       store = JSON.parse(savedStore);
       menus = JSON.parse(localStorage.getItem('wizpos_menus') || '[]');
       nextMenuId = menus.length ? Math.max(...menus.map(m=>m.id)) + 1 : 1;
       enterDashboard();
+      if (store.serverId) connectWS(store.serverId);
     } else {
       document.getElementById('connAddr').textContent = walletAddr.slice(0,6)+'...'+walletAddr.slice(-4);
       goPage('pg-register');
@@ -506,24 +563,44 @@ async function connectWC() {
 }
 
 /* ── 매장 등록 ── */
-function registerStore() {
+async function registerStore() {
   const name = document.getElementById('regName').value.trim();
   if (!name) { alert('매장명을 입력해주세요.'); return; }
-  store = {
+  const btn = document.querySelector('.reg-btn');
+  btn.textContent = '등록 중...'; btn.disabled = true;
+
+  // 서버에 매장 등록
+  const data = await api('POST', '/api/stores', {
     name,
     cat: document.getElementById('regCat').value,
-    addr: document.getElementById('regAddr').value.trim(),
-    wallet: walletAddr
-  };
-  localStorage.setItem('wizpos_store', JSON.stringify(store));
+    emoji: '🏪',
+    lat: 37.5665, lng: 126.9780, // 기본값 (서울)
+    address: document.getElementById('regAddr').value.trim(),
+    wallet_address: walletAddr.toLowerCase()
+  });
+
+  if (data && data.ok && data.store) {
+    store = { ...data.store, serverId: data.store.id };
+    localStorage.setItem('wizpos_store', JSON.stringify(store));
+    connectWS(data.store.id);
+  } else {
+    // 서버 실패 시 로컬 저장
+    store = { name, cat: document.getElementById('regCat').value,
+      addr: document.getElementById('regAddr').value.trim(), wallet: walletAddr };
+    localStorage.setItem('wizpos_store', JSON.stringify(store));
+    if (data && data.error) alert('서버 등록 실패: ' + data.error + '
+로컬 모드로 계속합니다.');
+  }
+  btn.textContent = '매장 등록하기 →'; btn.disabled = false;
   enterDashboard();
 }
 
 /* ── 대시보드 진입 ── */
 function enterDashboard() {
   document.querySelectorAll('.app-store').forEach(el => el.textContent = store.name);
-  renderOrders();
   goPage('pg-orders');
+  renderOrders();
+  loadOrders(); // 서버에서 최근 주문 로드
 }
 
 /* ── 주문 렌더 ── */
@@ -567,9 +644,16 @@ function statusLabel(s) {
   return {new:'신규 주문', making:'제조 중', done:'완료'}[s] || s;
 }
 
-function setStatus(id, status) {
+async function setStatus(id, status) {
   const o = orders.find(x => x.id===id);
-  if (o) { o.status = status; renderOrders(); updateStats(); }
+  if (!o) return;
+  o.status = status;
+  renderOrders();
+  updateStats();
+  // 서버 상태 업데이트
+  if (o.serverId) {
+    await api('PUT', '/api/orders/' + o.serverId + '/status', { status });
+  }
 }
 
 /* 테스트용 더미 주문 추가 */
@@ -657,7 +741,18 @@ function deleteMenu(id) {
   updateStats();
 }
 
-function saveMenus() { localStorage.setItem('wizpos_menus', JSON.stringify(menus)); }
+function saveMenus() {
+  localStorage.setItem('wizpos_menus', JSON.stringify(menus));
+  // 서버에도 동기화
+  if (store && store.serverId) {
+    api('PUT', '/api/stores/' + store.serverId + '/menus', {
+      menus: menus.map(m => ({
+        name: m.name, cat: m.cat, emoji: m.emoji,
+        price: m.price, reward: m.reward, soldout: m.soldout, desc: m.desc || ''
+      }))
+    });
+  }
+}
 
 /* ── 매출 통계 ── */
 function updateStats() {
@@ -683,6 +778,66 @@ function updateStats() {
       <div class="tx-amount">₩${o.total.toLocaleString()}</div>
     </div>
   `).join('');
+}
+
+/* ── WebSocket 실시간 주문 수신 ── */
+let ws = null;
+function connectWS(storeId) {
+  if (ws) ws.close();
+  const wsUrl = 'wss://pos-api.wizclass.net/ws?storeId=' + storeId;
+  ws = new WebSocket(wsUrl);
+  ws.onopen = () => console.log('✅ WebSocket 연결됨');
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'new_order' && msg.order) {
+        // 서버에서 새 주문 수신
+        const o = msg.order;
+        orders.push({
+          id: nextOrderId++,
+          serverId: o.id,
+          no: o.order_no,
+          items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
+          total: parseFloat(o.total_wusd),
+          oz: parseFloat(o.total_oz || 0),
+          status: 'new',
+          time: new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})
+        });
+        renderOrders();
+        updateStats();
+        // 알림음
+        try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA').play(); } catch(_) {}
+      } else if (msg.type === 'order_status') {
+        const o = orders.find(x => x.serverId == msg.orderId);
+        if (o) { o.status = msg.status; renderOrders(); updateStats(); }
+      }
+    } catch(err) { console.warn('WS 메시지 파싱 오류', err); }
+  };
+  ws.onclose = () => {
+    // 5초 후 재연결
+    setTimeout(() => { if (store && store.serverId) connectWS(store.serverId); }, 5000);
+  };
+  ws.onerror = (e) => console.warn('WebSocket 오류', e);
+}
+
+/* ── 서버에서 주문 목록 로드 ── */
+async function loadOrders() {
+  if (!store || !store.serverId) return;
+  const data = await api('GET', '/api/orders/' + store.serverId + '?limit=50');
+  if (data && data.orders) {
+    orders = data.orders.map(o => ({
+      id: nextOrderId++,
+      serverId: o.id,
+      no: o.order_no,
+      items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
+      total: parseFloat(o.total_wusd),
+      oz: parseFloat(o.total_oz || 0),
+      status: o.status,
+      time: new Date(o.created_at).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})
+    }));
+    renderOrders();
+    updateStats();
+  }
 }
 
 /* ── 모달 배경 클릭 닫기 ── */
@@ -712,5 +867,35 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+
+  <script>
+    // Service Worker 등록 (PWA 오프라인 지원)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(() => console.log('✅ Service Worker 등록됨'))
+          .catch(e => console.warn('SW 등록 실패:', e));
+      });
+    }
+    // iOS Safari PWA 설치 안내
+    window.addEventListener('DOMContentLoaded', () => {
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isStandalone = window.navigator.standalone;
+      if (isIOS && !isStandalone) {
+        // 첫 방문 시 한 번만 안내
+        if (!localStorage.getItem('pwa_hint_shown')) {
+          setTimeout(() => {
+            const hint = document.createElement('div');
+            hint.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;text-align:center;z-index:9999;max-width:280px;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+            hint.innerHTML = '📲 홈 화면에 추가하면<br>앱처럼 사용할 수 있어요!<br><small style="color:#aaa">Safari → 공유버튼 → 홈 화면에 추가</small>';
+            hint.onclick = () => { hint.remove(); localStorage.setItem('pwa_hint_shown','1'); };
+            document.body.appendChild(hint);
+            setTimeout(() => hint.remove(), 6000);
+            localStorage.setItem('pwa_hint_shown','1');
+          }, 3000);
+        }
+      }
+    });
+  </script>
 </body>
 </html>
