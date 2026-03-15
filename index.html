@@ -20,9 +20,9 @@
   var lang  = localStorage.getItem('cfg_lang')  || 'ko';
   var theme = localStorage.getItem('cfg_theme') || 'light';
   var I18N = {
-    ko:{ tagline:'더 편한 글로벌 올인원 포스', mm:'브라우저 익스텐션 / 모바일 앱', tw:'모바일 앱으로 연결', dex:'WizChain 탈중앙화 거래소' },
-    en:{ tagline:'The Global All-in-One POS',  mm:'Browser Extension / Mobile App',  tw:'Connect Mobile App',     dex:'WizChain DEX Exchange' },
-    zh:{ tagline:'全球一站式POS',              mm:'浏览器扩展 / 移动应用',            tw:'通过移动应用连接',        dex:'WizChain去中心化交易所' },
+    ko:{ tagline:'더 편한 글로벌 올인원 포스', mm:'복잡한 가입 NO! 개인정보유출 NO!!', dex:'더 쉽고 빠른 거래소 위즈덱스', guest:'지갑 연결 없이 결제 체험하기' },
+    en:{ tagline:'The Global All-in-One POS',  mm:'No signup! No personal data risk!!', dex:'Faster & Easier DEX - WizDEX', guest:'Try without a wallet' },
+    zh:{ tagline:'全球一站式POS', mm:'无需注册！无个人信息泄露！', dex:'更简单快速的交易所 WizDEX', guest:'无需钱包即可体验' },
   };
   function applyLang(l) {
     lang = l; localStorage.setItem('cfg_lang', l);
@@ -36,9 +36,7 @@
     theme = m; localStorage.setItem('cfg_theme', m);
     var s=document.getElementById('cfg-theme-style');
     if(!s){ s=document.createElement('style'); s.id='cfg-theme-style'; document.head.appendChild(s); }
-    s.textContent = m==='dark'
-      ? 'body,html{background:#111!important;color:#f0f0f0!important}.page{background:#111!important}.w-btn{background:#1e1e1e!important;border-color:#333!important}.w-btn-name{color:#f0f0f0!important}.w-btn-desc{color:#999!important}.logo{color:#f0f0f0!important}.tagline{color:#999!important}.wiz-badge{border-color:#333!important}.cfg-btn{background:#1e1e1e!important;border-color:#333!important;color:#f0f0f0!important}.cfg-menu{background:#1e1e1e!important;border-color:#333!important}.cfg-row{color:#f0f0f0!important;border-color:#333!important}.app-header,.tab-bar,.order-card,.menu-card,.modal-bg .modal{background:#1e1e1e!important;border-color:#333!important}.mc-name,.oc-no,.app-store{color:#f0f0f0!important}'
-      : '';
+    s.textContent = m==='dark' ? 'body,html{background:#111!important;color:#f0f0f0!important}.page{background:#111!important}.w-btn{background:#1a1a1a!important}.w-btn-name{color:#f0f0f0!important}.w-btn-desc{color:#888!important}.w-btn-icon{filter:brightness(0.9)}.w-btn.mm{border-color:#f6851b!important}.w-btn.dex{border-color:#0ea5e9!important}.w-btn.guest-border{border-color:#00a86b!important}.partner-banner{background:#1a1a1a!important;border-color:#00a86b!important}.partner-banner span{color:#ccc!important}.logo{color:#f0f0f0!important}.tagline{color:#999!important}.wiz-badge{border-color:#333!important}.wiz-by{color:#999!important}.net-note{color:#777!important}.cfg-btn{background:#1a1a1a!important;border-color:#333!important;color:#f0f0f0!important}.cfg-menu{background:#1a1a1a!important;border-color:#333!important}.cfg-row{color:#f0f0f0!important;border-bottom-color:#333!important}.top-bar,.store-card,.menu-row,.cart-bar,.pay-section,.app-header,.tab-bar{background:#1a1a1a!important;border-color:#333!important}.top-title,.menu-name,.cart-total,.pay-total-amount,.sc-name{color:#f0f0f0!important}.err-box{background:#2a1a1a!important}.partner-banner [style*="color:#00a86b"]{color:#00a86b!important}' : '';
     var icon=document.getElementById('cfgThemeIcon');
     if(icon) icon.textContent=m==='dark'?'🌙':'☀️';
     ['tl','td'].forEach(function(id,i){ var e=document.getElementById(id); if(e) e.style.display=['light','dark'][i]===m?'inline':'none'; });
@@ -420,17 +418,21 @@ async function loadOrders(){
 
 /* == 초기화 == */
 window.addEventListener('DOMContentLoaded',function(){
-  // 함수 존재 확인
-  const el=document.getElementById('fnCheck');
-  if(el){
-    const ok=['connectMM','connectTW','guestMode','cfgToggle'].map(fn=>fn+':'+(typeof window[fn]!=='undefined'?'✅':'❌')).join(' ');
-    el.textContent=ok;
-  }
   const saved=localStorage.getItem('wizpos_addr');
   if(saved&&window.ethereum){
     window.ethereum.request({method:'eth_accounts'}).then(a=>{ if(a.length){ walletAddr=a[0]; afterConnect(); } }).catch(()=>{});
   }
 });
+
+/* == 파트너십 모달 == */
+function openPartnerModal() {
+  const m = document.getElementById('partnerModal');
+  if(m) m.style.display = 'flex';
+}
+function closePartnerModal() {
+  const m = document.getElementById('partnerModal');
+  if(m) m.style.display = 'none';
+}
 </script>
 
 <style>
@@ -469,11 +471,15 @@ body{max-width:430px;margin:0 auto}
 .wallet-box{width:100%;max-width:340px}
 .err-box{background:#fff0ee;border:2px solid var(--warn);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--warn);margin-bottom:16px;display:none}
 .load-box{text-align:center;padding:12px;font-size:14px;color:var(--muted);display:none}
+.load-box{text-align:center;padding:12px;font-size:14px;color:var(--muted);display:none}
 .w-btn{width:100%;display:flex;align-items:center;gap:16px;background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;text-align:left;font-family:'Noto Sans KR',sans-serif}
 .w-btn:active{opacity:.75}
 .w-btn.mm{border-color:#f6851b}
+.w-btn.guest-border{border-color:#7c3aed}
+.partner-banner{width:100%;border:2px solid #00a86b;border-radius:16px;padding:18px 20px;margin-bottom:12px;cursor:pointer;background:transparent;min-height:76px;box-sizing:border-box;display:flex;align-items:center;gap:16px;}
+.w-btn.mm{border-color:#f6851b}
 .w-btn.tw{border-color:#3375ff}
-.w-btn.dex{border-color:#7c3aed}
+.w-btn.dex{border-color:#0ea5e9}
 .w-btn-icon{font-size:30px;flex-shrink:0}
 .w-btn-name{font-size:17px;font-weight:700;color:var(--text)}
 .w-btn-name.dex{color:#7c3aed}
@@ -618,9 +624,7 @@ body{max-width:430px;margin:0 auto}
       <div class="cfg-sec" style="margin-top:4px">테마 / Theme</div>
       <div class="cfg-row" onclick="cfgTheme('light')"><span>☀️ 라이트</span><span class="cfg-chk" id="tl">✓</span></div>
       <div class="cfg-row" onclick="cfgTheme('dark')"><span>🌙 다크</span><span class="cfg-chk" id="td" style="display:none">✓</span></div>
-      <div class="cfg-sec" style="margin-top:4px">서비스</div>
-      <div class="cfg-row" onclick="cfgDex()"><span>💱 WizDEX</span></div>
-      <div class="cfg-row red" onclick="cfgLogout()"><span>⏏ 로그아웃</span></div>
+
     </div>
   </div>
   <div class="cfg-ov" id="cfgOv" onclick="cfgClose()"></div>
@@ -633,23 +637,43 @@ body{max-width:430px;margin:0 auto}
     <div class="load-box" id="loadBox">연결 중...</div>
     <button class="w-btn mm" onclick="connectMM()">
       <span class="w-btn-icon">🦊</span>
-      <div><div class="w-btn-name">MetaMask</div><div class="w-btn-desc"><span id="i-mm">브라우저 익스텐션 / 모바일 앱</span></div></div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="w-btn-name" style="font-family:'Outfit',sans-serif;font-weight:900;font-size:20px;letter-spacing:-0.5px;color:var(--text);">MetaMask</div>
+          <span style="font-size:12px;font-weight:700;color:#f6851b;border:1.5px solid #f6851b;border-radius:6px;padding:2px 7px;">Web3 로그인</span>
+        </div>
+        <div class="w-btn-desc"><span id="i-mm">복잡한 가입 NO! 개인정보유출 NO!!</span></div>
+      </div>
       <span class="w-btn-arr">→</span>
     </button>
-    <button class="w-btn tw" onclick="connectTW()">
-      <span class="w-btn-icon">🛡️</span>
-      <div><div class="w-btn-name">Trust Wallet</div><div class="w-btn-desc"><span id="i-tw">모바일 앱으로 연결</span></div></div>
+    <button class="w-btn guest-border" onclick="guestMode()">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="w-btn-name" style="font-family:'Outfit',sans-serif;font-weight:900;font-size:20px;letter-spacing:-0.5px;color:var(--text);">DEMO</div>
+        </div>
+        <div class="w-btn-desc"><span id="i-guest">지갑 연결 없이 결제 체험하기</span></div>
+      </div>
       <span class="w-btn-arr">→</span>
     </button>
     <button class="w-btn dex" onclick="cfgDex()">
-      <span class="w-btn-icon">💱</span>
-      <div><div class="w-btn-name dex">WizDEX</div><div class="w-btn-desc"><span id="i-dex">WizChain 탈중앙화 거래소</span></div></div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="w-btn-name" style="font-family:'Outfit',sans-serif;font-weight:900;font-size:20px;letter-spacing:-0.5px;color:var(--text);"><span style="color:#0ea5e9;">Wiz</span>DEX</div>
+        </div>
+        <div class="w-btn-desc"><span id="i-dex">더 쉽고 빠른 거래소 위즈덱스</span></div>
+      </div>
       <span class="w-btn-arr">→</span>
     </button>
-    <button class="guest-btn" onclick="guestMode()">지갑 없이 둘러보기</button>
+    <div class="partner-banner" onclick="openPartnerModal()">
+      <div style="flex:1;">
+        <div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#00a86b;letter-spacing:-0.5px;margin-bottom:6px;">Wiz <span style="color:var(--text);">Referral Alliance</span></div>
+        <div style="font-size:13px;color:var(--muted);font-weight:500;line-height:1.5;">가치, 연결. WizPAY 엠버서더 파트너십 프로그램</div>
+      </div>
+      <span class="w-btn-arr">→</span>
+    </div>
     <div class="net-note">WizChain (Chain ID: 10243)<br>연결 시 자동으로 네트워크 전환</div>
-    <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;" id="fnCheck"></div>
   </div>
+  </div></div>
 </div>
 
 <!-- PAGE 2: 매장 등록 -->
@@ -786,5 +810,20 @@ body{max-width:430px;margin:0 auto}
 <script>
 // Service Worker 비활성화
 </script>
+
+<!-- 파트너십 문의 모달 -->
+<div id="partnerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;" onclick="closePartnerModal()">
+  <div style="background:var(--surface);border-radius:24px;padding:32px 28px;width:88%;max-width:340px;text-align:center;position:relative;" onclick="event.stopPropagation()">
+    <div style="font-size:36px;margin-bottom:16px;">🤝</div>
+    <div style="font-family:'Outfit',sans-serif;font-size:24px;font-weight:900;color:#00a86b;letter-spacing:-0.5px;margin-bottom:4px;">Wiz <span style="color:var(--text);">Referral</span></div>
+    <div style="font-family:'Outfit',sans-serif;font-size:24px;font-weight:900;color:var(--text);letter-spacing:-0.5px;margin-bottom:20px;">Alliance</div>
+    <div style="background:var(--bg);border-radius:14px;padding:18px;margin-bottom:20px;border:1.5px solid var(--border);">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px;">주식회사 위즈클라쓰 대표 김주원</div>
+      <a href="tel:01080810780" style="font-size:22px;font-weight:900;color:#00a86b;text-decoration:none;letter-spacing:1px;">010-8081-0780</a>
+    </div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:24px;">소중한 관심 감사합니다</div>
+    <button onclick="closePartnerModal()" style="width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">확인</button>
+  </div>
+</div>
 </body>
 </html>
