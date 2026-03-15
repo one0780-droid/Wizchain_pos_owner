@@ -205,118 +205,47 @@ body{max-width:430px;margin:0 auto;position:relative}
   .cfg-chk{color:var(--accent);font-weight:900}
   .cfg-ov{display:none;position:fixed;inset:0;z-index:99}
   .cfg-ov.on{display:block}
+
+/* 메뉴 카드 달러 위주 */
+.menu-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+.menu-card.soldout{opacity:.4}
+.mc-emoji{font-size:28px;width:50px;height:50px;background:var(--bg);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mc-info{flex:1;min-width:0}
+.mc-name{font-size:16px;font-weight:700;margin-bottom:2px}
+.mc-cat{font-size:12px;color:var(--muted);margin-bottom:6px}
+.mc-price-wrap{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
+.mc-usdw{font-size:20px;font-weight:900;color:var(--text)}
+.mc-usdw-label{font-size:13px;color:var(--muted);font-weight:500}
+.mc-won{font-size:12px;color:var(--muted);font-weight:500}
+.mc-reward{font-size:12px;color:var(--muted)}
+.mc-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.mc-btn{padding:7px 12px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap}
+.mc-btn.warn{border-color:var(--warn);color:var(--warn)}
+.mc-btn.del{border-color:#ddd;color:#bbb}
+/* 주문 카드 달러 위주 */
+.order-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px}
+.order-card.status-new{border-color:var(--accent)}
+.order-card.status-making{border-color:#f59e0b}
+.order-card.status-done{opacity:.6}
+.oc-head{display:flex;justify-content:space-between;margin-bottom:8px}
+.oc-no{font-size:15px;font-weight:700}
+.oc-time{font-size:13px;color:var(--muted)}
+.oc-items{font-size:14px;color:var(--muted);margin-bottom:10px}
+.oc-foot{display:flex;justify-content:space-between;align-items:center}
+.oc-usdw{font-size:20px;font-weight:900;color:var(--text)}
+.oc-won{font-size:12px;color:var(--muted);font-weight:500;margin-left:4px}
+.oc-btn{padding:9px 18px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif}
+.oc-btn.accept{background:var(--accent);color:#fff}
+.oc-btn.complete{background:#f59e0b;color:#fff}
+/* 통계 */
+.tx-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.tx-items{font-size:14px;margin-bottom:2px}
+.tx-no{font-size:12px;color:var(--muted)}
+.tx-usdw{font-size:16px;font-weight:900;color:var(--text);text-align:right}
+.tx-won{font-size:12px;color:var(--muted);text-align:right}
+
 </style>
-<script
-/* -- 가격 환율 연동 -- */
-var exchangeRate = 1350;
 
-async function fetchRate() {
-  try {
-    // 우리 서버에서 환율 가져오기 (1시간 캐싱)
-    const r = await fetch(API + '/api/rate');
-    const d = await r.json();
-    if (d.ok && d.usdKrw) {
-      exchangeRate = d.usdKrw;
-      const el = document.getElementById('currentRate');
-      if (el) el.textContent = exchangeRate.toLocaleString();
-    }
-  } catch(_) {
-    // 실패 시 기본값 1,350원 유지
-  }
-}
-
-function syncPrice(from) {
-  const wonEl  = document.getElementById('mPrice');
-  const usdEl  = document.getElementById('mPriceUsd');
-  const usdwEl = document.getElementById('mPriceUsdw');
-  if (!wonEl || !usdEl) return;
-  if (from === 'won') {
-    const won = parseFloat(wonEl.value) || 0;
-    usdEl.value  = won ? (won / exchangeRate).toFixed(2) : '';
-    if (usdwEl) usdwEl.value = won ? (won / exchangeRate).toFixed(2) + ' USDW' : '';
-  } else {
-    const usd = parseFloat(usdEl.value) || 0;
-    wonEl.value  = usd ? Math.round(usd * exchangeRate) : '';
-    if (usdwEl) usdwEl.value = usd ? usd.toFixed(2) + ' USDW' : '';
-  }
-}
-
-function openAddMenu() {
-  document.getElementById('addMenuModal').classList.add('on');
-  fetchRate();
-}
->
-/* ==== 설정 기능 ==== */
-(function(){
-  var lang  = localStorage.getItem('cfg_lang')  || 'ko';
-  var theme = localStorage.getItem('cfg_theme') || 'light';
-
-  var I18N = {
-    ko:{ tagline:'더 편한 글로벌 올인원 포스', mm:'브라우저 익스텐션 / 모바일 앱', tw:'모바일 앱으로 연결', dex:'WizChain 탈중앙화 거래소', guest:'지갑 없이 둘러보기' },
-    en:{ tagline:'The Global All-in-One POS', mm:'Browser Extension / Mobile App', tw:'Connect Mobile App', dex:'WizChain DEX Exchange', guest:'Browse without Wallet' },
-    zh:{ tagline:'全球一站式支付', mm:'浏览器扩展 / 移动应用', tw:'通过移动应用连接', dex:'WizChain去中心化交易所', guest:'无钱包浏览' },
-  };
-
-  function applyLang(l) {
-    lang = l; localStorage.setItem('cfg_lang', l);
-    var flags = {ko:'🇰🇷', en:'🇺🇸', zh:'🇨🇳'};
-    var el = document.getElementById('cfgLang');
-    if(el) el.textContent = flags[l];
-    ['lk','le','lz'].forEach(function(id,i){
-      var e = document.getElementById(id);
-      if(e) e.style.display = ['ko','en','zh'][i]===l ? 'inline':'none';
-    });
-    var t = I18N[l]||I18N.ko;
-    var map = {'i-tagline':t.tagline,'i-mm':t.mm,'i-tw':t.tw,'i-dex':t.dex,'i-guest':t.guest};
-    Object.keys(map).forEach(function(id){
-      var e = document.getElementById(id); if(e) e.textContent = map[id];
-    });
-  }
-
-  function applyTheme(m) {
-    theme = m; localStorage.setItem('cfg_theme', m);
-    var s = document.getElementById('cfg-theme-style');
-    if(!s){ s=document.createElement('style'); s.id='cfg-theme-style'; document.head.appendChild(s); }
-    s.textContent = m==='dark'
-      ? 'body,html{background:#111 !important;color:#f0f0f0 !important}.page{background:#111 !important}.w-btn{background:#1e1e1e !important;border-color:#333 !important}.w-btn-name{color:#f0f0f0 !important}.w-btn-desc{color:#999 !important}.logo{color:#f0f0f0 !important}.tagline{color:#999 !important}.wiz-badge{border-color:#333 !important}.wiz-by{color:#999 !important}.net-note{color:#999 !important}.guest-btn{color:#999 !important;border-color:#333 !important}.cfg-btn{background:#1e1e1e !important;border-color:#333 !important;color:#f0f0f0 !important}.cfg-menu{background:#1e1e1e !important;border-color:#333 !important}.cfg-row{color:#f0f0f0 !important;border-color:#333 !important}.top-bar,.store-card,.menu-row,.cart-bar,.pay-section,.app-header,.tab-bar{background:#1e1e1e !important;border-color:#333 !important}.top-title,.menu-name,.cart-total,.pay-total-amount,.sc-name,.mc-name{color:#f0f0f0 !important}'
-      : '';
-    var icon = document.getElementById('cfgThemeIcon');
-    if(icon) icon.textContent = m==='dark'?'🌙':'☀️';
-    ['tl','td'].forEach(function(id,i){
-      var e=document.getElementById(id);
-      if(e) e.style.display=['light','dark'][i]===m?'inline':'none';
-    });
-  }
-
-  window.cfgToggle = function(){
-    var m=document.getElementById('cfgMenu');
-    var o=document.getElementById('cfgOv');
-    if(!m) return;
-    var on=m.classList.toggle('on');
-    o.classList.toggle('on',on);
-  };
-  window.cfgClose = function(){
-    var m=document.getElementById('cfgMenu');
-    var o=document.getElementById('cfgOv');
-    if(m) m.classList.remove('on');
-    if(o) o.classList.remove('on');
-  };
-  window.cfgLang   = function(l){ applyLang(l);  cfgClose(); };
-  window.cfgTheme  = function(m){ applyTheme(m); cfgClose(); };
-  window.cfgDex    = function(){ cfgClose(); window.open('https://dex.wizclass.net','_blank'); };
-  window.cfgLogout = function(){
-    cfgClose();
-    var msg=lang==='en'?'Logout?':lang==='zh'?'退出登录？':'로그아웃 할까요?';
-    if(!confirm(msg)) return;
-    localStorage.clear(); location.reload();
-  };
-
-  document.addEventListener('DOMContentLoaded',function(){
-    applyLang(lang); applyTheme(theme);
-  });
-})();
-/* ==== 설정 끝 ==== */
-</script>
 </head>
 <body>
 
@@ -553,21 +482,25 @@ function openAddMenu() {
     <!-- 가격 입력 (원화 ↔ 달러 연동) -->
     <div class="modal-form-group">
       <label class="modal-label">가격 *</label>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;">
+      <!-- 달러 기준, 원화 참고 -->
+      <div style="margin-bottom:10px;">
         <div style="position:relative;">
-          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);font-weight:700;">₩</span>
-          <input class="modal-input" id="mPrice" type="number" placeholder="4500"
-            style="padding-left:28px;" oninput="syncPrice('won')">
-        </div>
-        <div style="text-align:center;color:var(--muted);font-size:18px;">⇄</div>
-        <div style="position:relative;">
-          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);font-weight:700;">$</span>
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:900;color:var(--text);">$</span>
           <input class="modal-input" id="mPriceUsd" type="number" placeholder="3.33"
-            style="padding-left:28px;" step="0.01" oninput="syncPrice('usd')">
+            style="padding-left:30px;font-size:20px;font-weight:900;" step="0.01" oninput="syncPrice('usd')">
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;text-align:right">= USDW 결제 금액</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap;">≈ 원화환산</span>
+        <div style="position:relative;flex:1">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);font-weight:700;">₩</span>
+          <input class="modal-input" id="mPrice" type="number" placeholder="4500"
+            style="padding-left:28px;font-size:14px;color:var(--muted);" oninput="syncPrice('won')">
         </div>
       </div>
       <div style="text-align:right;margin-top:5px;font-size:12px;color:var(--muted);" id="rateNote">
-        기준환율: 1 USD = <span id="currentRate">1,350</span>원
+        실시간 환율: $1 = <span id="currentRate">1,350</span>원
       </div>
     </div>
     <div class="modal-row">
@@ -591,6 +524,285 @@ function openAddMenu() {
 </div>
 
 <script>
+/* == API == */
+const API = 'https://pos-api.wizclass.net';
+async function api(method, path, body) {
+  try {
+    const res = await fetch(API + path, {
+      method, headers:{'Content-Type':'application/json'},
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(5000)
+    });
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+/* == 상태 == */
+let walletAddr='', store=null, menus=[], orders=[], nextOrderId=1;
+let exchangeRate=1350;
+let ws=null;
+
+/* == 에러/로딩 == */
+function showErr(msg){ const e=document.getElementById('errBox'); e.textContent=msg; e.style.display='block'; }
+function hideErr(){ const e=document.getElementById('errBox'); if(e) e.style.display='none'; }
+function showLoad(v){ const e=document.getElementById('loadBox'); if(e) e.style.display=v?'block':'none'; }
+function goPage(id){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.getElementById(id).classList.add('on'); }
+
+/* == 환율 == */
+async function fetchRate() {
+  try {
+    const d=await api('GET','/api/rate');
+    if(d&&d.usdKrw){ exchangeRate=d.usdKrw; const el=document.getElementById('currentRate'); if(el) el.textContent=exchangeRate.toLocaleString(); }
+  } catch(_){}
+}
+
+/* == 브라우저/지갑 감지 == */
+function getEnv(){
+  const ua=navigator.userAgent.toLowerCase();
+  return {isKakao:ua.includes('kakaotalk'),isSamsung:ua.includes('samsungbrowser'),isMetaMask:ua.includes('metamask'),isTrust:ua.includes('trust'),isMobile:/android|iphone|ipad/i.test(ua)};
+}
+function detectEthereum(){
+  return new Promise(resolve=>{
+    if(window.ethereum) return resolve(window.ethereum);
+    let n=0; const t=setInterval(()=>{ if(window.ethereum){clearInterval(t);resolve(window.ethereum);} else if(++n>5){clearInterval(t);resolve(null);} },100);
+  });
+}
+function openMetaMask(){ window.location.href='https://metamask.app.link/dapp/'+location.href.replace(/^https?:\/\//,''); }
+
+/* == 지갑 연결 == */
+async function connectWallet(provider){
+  hideErr(); showLoad(true);
+  try {
+    if(typeof ethers==='undefined') throw new Error('ethers 로드 실패');
+    const bp=new ethers.BrowserProvider(provider);
+    await bp.send('eth_requestAccounts',[]);
+    const signer=await bp.getSigner();
+    walletAddr=await signer.getAddress();
+    try { await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x27F3'}]}); }
+    catch(e){ if(e.code===4902||e.code===-32603){ try{ await provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x27F3',chainName:'WizChain',nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},rpcUrls:['https://rpc.wizclass.net']}]}); }catch(_){} } }
+    localStorage.setItem('wizpos_addr', walletAddr);
+    await afterConnect();
+  } catch(e){
+    if(e.code===4001) showErr('연결을 취소했습니다.');
+    else showErr('연결 실패: '+(e.message||String(e)));
+  }
+  showLoad(false);
+}
+async function connectMM(){
+  hideErr(); const env=getEnv();
+  if(env.isKakao||env.isSamsung||(env.isMobile&&!env.isMetaMask&&!env.isTrust)){ openMetaMask(); return; }
+  const p=await detectEthereum(); if(!p){ openMetaMask(); return; }
+  await connectWallet(p);
+}
+async function connectTW(){
+  hideErr(); const env=getEnv();
+  const twUrl='https://link.trustwallet.com/open_url?coin_id=60&url='+encodeURIComponent(location.href);
+  if(env.isKakao||env.isSamsung||(env.isMobile&&!env.isMetaMask&&!env.isTrust)){ window.location.href=twUrl; return; }
+  const p=await detectEthereum(); if(!p){ window.location.href=twUrl; return; }
+  await connectWallet(p);
+}
+
+/* == 연결 후 처리 == */
+async function afterConnect(){
+  showLoad(true);
+  const data=await api('GET','/api/stores');
+  if(data&&data.stores){
+    const my=data.stores.find(s=>s.wallet_address&&s.wallet_address.toLowerCase()===walletAddr.toLowerCase());
+    if(my){
+      store={...my,serverId:my.id};
+      const detail=await api('GET','/api/stores/'+my.id);
+      if(detail&&detail.store&&detail.store.menus){
+        menus=detail.store.menus.map(m=>({id:m.id,name:m.name,cat:m.cat,emoji:m.emoji||'🍽',price:m.price,reward:parseFloat(m.reward)||1,desc:m.description||'',soldout:!!m.soldout}));
+      }
+      localStorage.setItem('wizpos_store',JSON.stringify(store));
+      connectWS(my.id); enterDashboard(); showLoad(false); return;
+    }
+  }
+  const saved=localStorage.getItem('wizpos_store');
+  if(saved){ store=JSON.parse(saved); menus=JSON.parse(localStorage.getItem('wizpos_menus')||'[]'); if(store.serverId) connectWS(store.serverId); enterDashboard(); }
+  else { document.getElementById('connAddr').textContent=walletAddr.slice(0,6)+'...'+walletAddr.slice(-4); goPage('pg-register'); }
+  showLoad(false);
+}
+
+function guestMode(){
+  store={name:'데모 매장',cat:'☕ 카페',serverId:null};
+  menus=[{id:1,name:'아메리카노',cat:'커피',emoji:'☕',price:4500,reward:1,desc:'진한 에스프레소',soldout:false},{id:2,name:'카페라떼',cat:'커피',emoji:'🥛',price:5000,reward:1.5,desc:'부드러운 라떼',soldout:false},{id:3,name:'치즈케이크',cat:'디저트',emoji:'🍰',price:7000,reward:3,desc:'뉴욕 스타일',soldout:false}];
+  enterDashboard();
+}
+
+/* == 매장 등록 == */
+async function registerStore(){
+  const name=document.getElementById('regName').value.trim();
+  if(!name){ alert('매장명을 입력해주세요.'); return; }
+  const btn=document.querySelector('.reg-btn'); btn.textContent='등록 중...'; btn.disabled=true;
+  const data=await api('POST','/api/stores',{name,cat:document.getElementById('regCat').value,emoji:'🏪',lat:37.5665,lng:126.9780,address:document.getElementById('regAddr').value.trim(),wallet_address:walletAddr.toLowerCase()});
+  if(data&&data.ok&&data.store){ store={...data.store,serverId:data.store.id}; connectWS(data.store.id); }
+  else { store={name,cat:document.getElementById('regCat').value,addr:document.getElementById('regAddr').value.trim(),wallet:walletAddr}; }
+  localStorage.setItem('wizpos_store',JSON.stringify(store));
+  btn.textContent='매장 등록하기 →'; btn.disabled=false;
+  enterDashboard();
+}
+
+/* == 대시보드 진입 == */
+function enterDashboard(){
+  ['storeName','storeNameM','storeNameS'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent=store.name; });
+  goPage('pg-orders');
+  renderOrders();
+  renderMenuCards();
+  fetchRate();
+  if(store.serverId) loadOrders();
+}
+
+/* == 탭 전환 == */
+function switchTab(tab, el){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on')); el.classList.add('on');
+  if(tab==='orders') goPage('pg-orders');
+  else if(tab==='menus') goPage('pg-menus');
+  else if(tab==='stats'){ updateStats(); goPage('pg-stats'); }
+}
+
+/* == 주문 렌더링 == */
+function renderOrders(){
+  const body=document.getElementById('ordersBody');
+  if(!orders.length){ body.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">아직 주문이 없습니다</div></div>'; return; }
+  const sorted=[...orders].sort((a,b)=>{ const o={'new':0,'making':1,'done':2}; return (o[a.status]||0)-(o[b.status]||0); });
+  body.innerHTML=sorted.map(o=>{
+    const usd=(o.total/exchangeRate).toFixed(2);
+    const items=o.items?o.items.map(i=>i.name+' x'+i.qty).join(', '):'';
+    const btns=o.status==='new'
+      ?'<button class="oc-btn accept" onclick="setStatus('+o.id+','making')">수락</button>'
+      :o.status==='making'
+      ?'<button class="oc-btn complete" onclick="setStatus('+o.id+','done')">완료</button>'
+      :'<span style="font-size:13px;color:var(--muted)">완료</span>';
+    return '<div class="order-card status-'+o.status+'">'
+      +'<div class="oc-head"><span class="oc-no">#'+o.no+'</span><span class="oc-time">'+o.time+'</span></div>'
+      +'<div class="oc-items">'+items+'</div>'
+      +'<div class="oc-foot">'
+      +'<div>'
+      +'<span class="oc-usdw">$'+usd+' USDW</span>'
+      +'<span class="oc-won">₩'+o.total.toLocaleString()+'</span>'
+      +'</div>'
+      +btns+'</div></div>';
+  }).join('');
+}
+
+async function setStatus(id,status){
+  const o=orders.find(x=>x.id===id); if(!o) return;
+  o.status=status; renderOrders(); updateStats();
+  if(o.serverId) await api('PUT','/api/orders/'+o.serverId+'/status',{status});
+}
+
+/* == 메뉴 카드 (달러 위주 UI) == */
+function renderMenuCards(){
+  const cnt=document.getElementById('menuCount'); if(cnt) cnt.textContent='메뉴 '+menus.length+'개';
+  const grid=document.getElementById('menuCards'); if(!grid) return;
+  if(!menus.length){ grid.innerHTML='<div style="text-align:center;padding:32px;color:var(--muted)">메뉴가 없습니다<br><small>+ 메뉴 추가 버튼을 눌러주세요</small></div>'; return; }
+  grid.innerHTML=menus.map(m=>{
+    const usd=(m.price/exchangeRate).toFixed(2);
+    return '<div class="menu-card'+(m.soldout?' soldout':'')+'">'
+      +'<div class="mc-emoji">'+(m.emoji||'🍽')+'</div>'
+      +'<div class="mc-info">'
+      +'<div class="mc-name">'+m.name+'</div>'
+      +'<div class="mc-cat">'+m.cat+'</div>'
+      +'<div class="mc-price-wrap">'
+      +'<span class="mc-usdw">$'+usd+'</span>'
+      +'<span class="mc-usdw-label"> USDW</span>'
+      +'<span class="mc-won">₩'+m.price.toLocaleString()+'</span>'
+      +'</div>'
+      +'<div class="mc-reward">'+m.reward+'x OZ · '+(m.desc||'')+'</div>'
+      +'</div>'
+      +'<div class="mc-actions">'
+      +(m.soldout?'<button class="mc-btn" onclick="toggleSoldout('+m.id+')">품절해제</button>':'<button class="mc-btn warn" onclick="toggleSoldout('+m.id+')">품절</button>')
+      +'<button class="mc-btn del" onclick="delMenu('+m.id+')">삭제</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+function toggleSoldout(id){ const m=menus.find(x=>x.id===id); if(m){ m.soldout=!m.soldout; renderMenuCards(); saveMenus(); } }
+function delMenu(id){ if(!confirm('삭제할까요?')) return; menus=menus.filter(x=>x.id!==id); renderMenuCards(); saveMenus(); }
+function saveMenus(){
+  localStorage.setItem('wizpos_menus',JSON.stringify(menus));
+  if(store&&store.serverId){ api('PUT','/api/stores/'+store.serverId+'/menus',{menus:menus.map(m=>({name:m.name,cat:m.cat,emoji:m.emoji,price:m.price,reward:m.reward,soldout:m.soldout,desc:m.desc||''}))}); }
+}
+
+/* == 메뉴 추가 모달 == */
+function openAddMenu(){ document.getElementById('addMenuModal').classList.add('on'); fetchRate(); }
+function closeAddMenu(){
+  document.getElementById('addMenuModal').classList.remove('on');
+  ['mName','mCat','mEmoji','mPrice','mPriceUsd','mPriceUsdw','mReward','mDesc'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+}
+function syncPrice(from){
+  const w=document.getElementById('mPrice'), d=document.getElementById('mPriceUsd'), u=document.getElementById('mPriceUsdw');
+  if(from==='won'){ const v=parseFloat(w.value)||0; if(d) d.value=v?(v/exchangeRate).toFixed(2):''; if(u) u.value=v?(v/exchangeRate).toFixed(2)+' USDW':''; }
+  else { const v=parseFloat(d.value)||0; if(w) w.value=v?Math.round(v*exchangeRate):''; if(u) u.value=v?v.toFixed(2)+' USDW':''; }
+}
+function saveMenu(){
+  const name=document.getElementById('mName').value.trim();
+  const price=parseInt(document.getElementById('mPrice').value);
+  if(!name||!price){ alert('메뉴명과 가격은 필수입니다.'); return; }
+  const newId=menus.length?Math.max(...menus.map(m=>m.id))+1:1;
+  menus.push({id:newId,name,cat:document.getElementById('mCat').value||'기타',emoji:document.getElementById('mEmoji').value||'🍽',price,reward:parseFloat(document.getElementById('mReward').value)||1,desc:document.getElementById('mDesc').value||'',soldout:false});
+  renderMenuCards(); saveMenus(); closeAddMenu();
+}
+
+/* == 통계 == */
+function updateStats(){
+  const done=orders.filter(o=>o.status==='done');
+  const total=done.reduce((s,o)=>s+o.total,0);
+  const oz=done.reduce((s,o)=>s+o.oz,0);
+  const el=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  el('statSales','₩'+total.toLocaleString());
+  el('statCount',done.length+'건');
+  el('statOZ',oz.toFixed(1)+' OZ');
+  el('statMenus',menus.filter(m=>!m.soldout).length+'개');
+  const txList=document.getElementById('txList');
+  if(txList){
+    if(!done.length){ txList.innerHTML='<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">아직 주문 내역이 없습니다</div>'; return; }
+    txList.innerHTML=[...done].reverse().map(o=>{
+      const usd=(o.total/exchangeRate).toFixed(2);
+      return '<div class="tx-row"><div class="tx-left"><div class="tx-items">'+o.items.map(i=>i.name+' x'+i.qty).join(', ')+'</div><div class="tx-no">#'+o.no+' · '+o.time+'</div></div><div class="tx-right"><div class="tx-usdw">$'+usd+' USDW</div><div class="tx-won">₩'+o.total.toLocaleString()+'</div></div></div>';
+    }).join('');
+  }
+}
+
+/* == WebSocket == */
+function connectWS(storeId){
+  if(ws) ws.close();
+  ws=new WebSocket('wss://pos-api.wizclass.net/ws?storeId='+storeId);
+  ws.onopen=()=>console.log('WS 연결');
+  ws.onmessage=(e)=>{
+    try {
+      const msg=JSON.parse(e.data);
+      if(msg.type==='new_order'&&msg.order){
+        const o=msg.order;
+        orders.push({id:nextOrderId++,serverId:o.id,no:o.order_no,items:typeof o.items==='string'?JSON.parse(o.items):o.items,total:parseFloat(o.total_wusd)||0,oz:parseFloat(o.total_oz)||0,status:'new',time:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});
+        renderOrders(); updateStats();
+      } else if(msg.type==='order_status'){
+        const o=orders.find(x=>x.serverId==msg.orderId); if(o){ o.status=msg.status; renderOrders(); updateStats(); }
+      }
+    }catch(_){}
+  };
+  ws.onclose=()=>{ setTimeout(()=>{ if(store&&store.serverId) connectWS(store.serverId); },5000); };
+}
+
+async function loadOrders(){
+  const data=await api('GET','/api/orders/'+store.serverId+'?limit=50');
+  if(data&&data.orders){
+    orders=data.orders.map(o=>({id:nextOrderId++,serverId:o.id,no:o.order_no,items:typeof o.items==='string'?JSON.parse(o.items):(o.items||[]),total:parseFloat(o.total_wusd)||0,oz:parseFloat(o.total_oz)||0,status:o.status,time:new Date(o.created_at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}));
+    renderOrders(); updateStats();
+  }
+}
+
+/* == 초기화 == */
+window.addEventListener('DOMContentLoaded',function(){
+  const saved=localStorage.getItem('wizpay_addr')||localStorage.getItem('wizpos_addr');
+  if(saved&&window.ethereum){
+    window.ethereum.request({method:'eth_accounts'}).then(a=>{ if(a.length){ walletAddr=a[0]; afterConnect(); } }).catch(()=>{});
+  }
+});
+
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
+
 
 
 
