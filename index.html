@@ -71,7 +71,7 @@ async function checkAndShowChain(addr, barSuffix, walletType) {
 
   try {
     const chainId = await window.ethereum.request({method:'eth_chainId'});
-    const isWizChain = chainId === '0x27F3';
+    const isWizChain = chainId === '0x2803';
     const chainEl = document.getElementById('wbChain'+barSuffix);
 
     if(isWizChain) {
@@ -98,7 +98,7 @@ async function checkAndShowChain(addr, barSuffix, walletType) {
         chainEl.style.color = '#e03e1a';
       }
       // 잔액 표시 불가
-      ['wbUSDW','wbOZ','wbWCN'].forEach(id=>{
+      ['wbUSDW','wbOZ'].forEach(id=>{
         const el=document.getElementById(id+barSuffix);
         if(el) el.textContent = '--';
       });
@@ -129,12 +129,12 @@ function showChainSwitchAlert(suffix) {
 
 async function switchToWizChain() {
   try {
-    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x27F3'}]});
+    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2803'}]});
   } catch(e) {
     if(e.code===4902||e.code===-32603){
       try {
         await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
-          chainId:'0x27F3', chainName:'WizChain',
+          chainId:'0x2803', chainName:'WizChain',
           nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},
           rpcUrls:['https://rpc.wizclass.net']
         }]});
@@ -147,10 +147,7 @@ async function loadWalletBalances(addr, suffix) {
   try {
     if(typeof ethers==='undefined') return;
     const provider = new ethers.BrowserProvider(window.ethereum);
-    // WCN 네이티브
-    const wcnBal = await provider.getBalance(addr);
-    const wcnEl = document.getElementById('wbWCN'+suffix);
-    if(wcnEl) wcnEl.textContent = parseFloat(ethers.formatEther(wcnBal)).toFixed(2);
+    
     // USDW
     const usdwC = new ethers.Contract(
       '0x1234B0663b82b260DebEe961C2b5DBfC79bADdBd',
@@ -163,7 +160,7 @@ async function loadWalletBalances(addr, suffix) {
     const ozEl = document.getElementById('wbOZ'+suffix);
     if(ozEl) ozEl.textContent = '0.00';
   } catch(e) {
-    ['wbUSDW','wbOZ','wbWCN'].forEach(id=>{
+    ['wbUSDW','wbOZ'].forEach(id=>{
       const el=document.getElementById(id+suffix); if(el) el.textContent='--';
     });
   }
@@ -221,8 +218,8 @@ async function connectWallet(provider){
     const bp=new ethers.BrowserProvider(provider);
     await bp.send('eth_requestAccounts',[]);
     walletAddr=await (await bp.getSigner()).getAddress();
-    try { await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x27F3'}]}); }
-    catch(e){ if(e.code===4902||e.code===-32603){ try{ await provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x27F3',chainName:'WizChain',nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},rpcUrls:['https://rpc.wizclass.net']}]}); }catch(_){} } }
+    try { await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2803'}]}); }
+    catch(e){ if(e.code===4902||e.code===-32603){ try{ await provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x2803',chainName:'WizChain',nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},rpcUrls:['https://rpc.wizclass.net']}]}); }catch(_){} } }
     localStorage.setItem('wizpos_addr', walletAddr);
     await afterConnect();
   } catch(e){
@@ -307,7 +304,7 @@ function enterDashboard(){
     const wtype=env.isTrust?'trust':'metamask';
     checkAndShowChain(walletAddr, 'O', wtype);
     // 모든 페이지 지갑바 동기화
-    ['O','M','S'].forEach(s=>{ checkAndShowChain(walletAddr, s, wtype); });
+    checkAndShowChain(walletAddr, 'O', wtype);
   }
   fetchRate();
   goPage('pg-orders');
@@ -677,90 +674,23 @@ body{max-width:430px;margin:0 auto}
     <div><div class="app-logo">Wiz<span>POS</span></div><div class="app-store" id="storeName">매장명</div></div>
     <div class="header-right"><div class="chain-live"><div class="chain-dot"></div>WizChain</div></div>
   </div>
-    <!-- 지갑 정보 바 -->
+  <!-- 지갑 정보 바 (공통 1개) -->
   <div class="wallet-bar" id="walletBarO">
     <div class="wb-row1">
       <div class="wb-wallet">
         <span class="wb-wallet-icon" id="wbIconO">🦊</span>
         <span class="wb-addr" id="wbAddrO" onclick="copyAddrO()">0x...</span>
       </div>
-      <div class="wb-chain">
+      <div class="wb-chain" id="wbChainWrapO">
         <div class="wb-chain-dot"></div>
         <span class="wb-chain-name" id="wbChainO">WizChain</span>
       </div>
     </div>
     <div class="wb-row2">
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbUSDWO"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">USDW</span>
-      </div>
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbOZO"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">OZ</span>
-      </div>
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbWCNO"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">WCN</span>
-      </div>
+      <div class="wb-balance-item"><span class="wb-balance-val" id="wbUSDWO">···</span><span class="wb-balance-sym">USDW</span></div>
+      <div class="wb-balance-item"><span class="wb-balance-val" id="wbOZO">···</span><span class="wb-balance-sym">OZ</span></div>
     </div>
   </div>
-
-    <!-- 지갑 정보 바 -->
-  <div class="wallet-bar" id="walletBarM">
-    <div class="wb-row1">
-      <div class="wb-wallet">
-        <span class="wb-wallet-icon" id="wbIconM">🦊</span>
-        <span class="wb-addr" id="wbAddrM" onclick="copyAddrO()">0x...</span>
-      </div>
-      <div class="wb-chain">
-        <div class="wb-chain-dot"></div>
-        <span class="wb-chain-name" id="wbChainM">WizChain</span>
-      </div>
-    </div>
-    <div class="wb-row2">
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbUSDWM"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">USDW</span>
-      </div>
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbOZM"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">OZ</span>
-      </div>
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbWCNM"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">WCN</span>
-      </div>
-    </div>
-  </div>
-
-    <!-- 지갑 정보 바 -->
-  <div class="wallet-bar" id="walletBarS">
-    <div class="wb-row1">
-      <div class="wb-wallet">
-        <span class="wb-wallet-icon" id="wbIconS">🦊</span>
-        <span class="wb-addr" id="wbAddrS" onclick="copyAddrO()">0x...</span>
-      </div>
-      <div class="wb-chain">
-        <div class="wb-chain-dot"></div>
-        <span class="wb-chain-name" id="wbChainS">WizChain</span>
-      </div>
-    </div>
-    <div class="wb-row2">
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbUSDWS"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">USDW</span>
-      </div>
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbOZS"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">OZ</span>
-      </div>
-      <div class="wb-balance-item">
-        <span class="wb-balance-val" id="wbWCNS"><span class="wb-loading">···</span></span>
-        <span class="wb-balance-sym">WCN</span>
-      </div>
-    </div>
-  </div>
-
   <div class="tab-bar">
     <button class="tab-btn on" onclick="switchTab('orders',this)">📋 주문</button>
     <button class="tab-btn" onclick="switchTab('menus',this)">🍽 메뉴</button>
@@ -770,7 +700,6 @@ body{max-width:430px;margin:0 auto}
     <div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">아직 주문이 없습니다</div></div>
   </div>
 </div>
-
 <!-- PAGE 4: 메뉴 관리 -->
 <div class="page" id="pg-menus">
   <div class="app-header">
