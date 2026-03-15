@@ -174,16 +174,182 @@ body{max-width:430px;margin:0 auto;position:relative}
 .tx-items{font-size:14px;color:var(--muted);margin-bottom:2px}
 .tx-time{font-size:12px;color:var(--muted)}
 .tx-amount{font-size:17px;font-weight:900}
+
+
+  .settings-btn{display:flex;align-items:center;gap:7px;background:transparent;border:2px solid var(--border);border-radius:22px;padding:7px 14px;cursor:pointer;font-size:14px;font-weight:700;color:var(--text);white-space:nowrap}
+  .settings-btn:active{opacity:.75}
+  .s-arrow{font-size:9px;color:var(--muted);transition:transform .2s}
+  .settings-btn.open .s-arrow{transform:rotate(180deg)}
+  .settings-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:2px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.15);min-width:180px;z-index:1100}
+  .settings-menu.open{display:block}
+  .s-section-title{padding:10px 16px 4px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .s-item{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border)}
+  .s-item:last-child{border-bottom:none}
+  .s-item:active{opacity:.7}
+  .s-item.danger{color:var(--warn)}
+  .s-check{color:var(--accent);font-size:15px}
+  .s-divider{height:2px;background:var(--border)}
+
+
+  /* ---- 설정 버튼 ---- */
+  .cfg-wrap{position:absolute;top:16px;right:16px;z-index:100}
+  .cfg-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface);border:2px solid var(--border);border-radius:24px;padding:9px 18px;cursor:pointer;font-size:15px;font-weight:700;color:var(--text);line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .cfg-btn:active{opacity:.7}
+  .cfg-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:2px solid var(--border);border-radius:14px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:200;overflow:hidden}
+  .cfg-menu.on{display:block}
+  .cfg-sec{padding:8px 14px 4px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .cfg-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border)}
+  .cfg-row:last-child{border-bottom:none}
+  .cfg-row:active{opacity:.7}
+  .cfg-row.red{color:var(--warn)}
+  .cfg-chk{color:var(--accent);font-weight:900}
+  .cfg-ov{display:none;position:fixed;inset:0;z-index:99}
+  .cfg-ov.on{display:block}
 </style>
+<script
+/* -- 가격 환율 연동 -- */
+var exchangeRate = 1350;
+
+async function fetchRate() {
+  try {
+    // 우리 서버에서 환율 가져오기 (1시간 캐싱)
+    const r = await fetch(API + '/api/rate');
+    const d = await r.json();
+    if (d.ok && d.usdKrw) {
+      exchangeRate = d.usdKrw;
+      const el = document.getElementById('currentRate');
+      if (el) el.textContent = exchangeRate.toLocaleString();
+    }
+  } catch(_) {
+    // 실패 시 기본값 1,350원 유지
+  }
+}
+
+function syncPrice(from) {
+  const wonEl  = document.getElementById('mPrice');
+  const usdEl  = document.getElementById('mPriceUsd');
+  const usdwEl = document.getElementById('mPriceUsdw');
+  if (!wonEl || !usdEl) return;
+  if (from === 'won') {
+    const won = parseFloat(wonEl.value) || 0;
+    usdEl.value  = won ? (won / exchangeRate).toFixed(2) : '';
+    if (usdwEl) usdwEl.value = won ? (won / exchangeRate).toFixed(2) + ' USDW' : '';
+  } else {
+    const usd = parseFloat(usdEl.value) || 0;
+    wonEl.value  = usd ? Math.round(usd * exchangeRate) : '';
+    if (usdwEl) usdwEl.value = usd ? usd.toFixed(2) + ' USDW' : '';
+  }
+}
+
+function openAddMenu() {
+  document.getElementById('addMenuModal').classList.add('on');
+  fetchRate();
+}
+>
+/* ==== 설정 기능 ==== */
+(function(){
+  var lang  = localStorage.getItem('cfg_lang')  || 'ko';
+  var theme = localStorage.getItem('cfg_theme') || 'light';
+
+  var I18N = {
+    ko:{ tagline:'더 편한 글로벌 올인원 포스', mm:'브라우저 익스텐션 / 모바일 앱', tw:'모바일 앱으로 연결', dex:'WizChain 탈중앙화 거래소', guest:'지갑 없이 둘러보기' },
+    en:{ tagline:'The Global All-in-One POS', mm:'Browser Extension / Mobile App', tw:'Connect Mobile App', dex:'WizChain DEX Exchange', guest:'Browse without Wallet' },
+    zh:{ tagline:'全球一站式支付', mm:'浏览器扩展 / 移动应用', tw:'通过移动应用连接', dex:'WizChain去中心化交易所', guest:'无钱包浏览' },
+  };
+
+  function applyLang(l) {
+    lang = l; localStorage.setItem('cfg_lang', l);
+    var flags = {ko:'🇰🇷', en:'🇺🇸', zh:'🇨🇳'};
+    var el = document.getElementById('cfgLang');
+    if(el) el.textContent = flags[l];
+    ['lk','le','lz'].forEach(function(id,i){
+      var e = document.getElementById(id);
+      if(e) e.style.display = ['ko','en','zh'][i]===l ? 'inline':'none';
+    });
+    var t = I18N[l]||I18N.ko;
+    var map = {'i-tagline':t.tagline,'i-mm':t.mm,'i-tw':t.tw,'i-dex':t.dex,'i-guest':t.guest};
+    Object.keys(map).forEach(function(id){
+      var e = document.getElementById(id); if(e) e.textContent = map[id];
+    });
+  }
+
+  function applyTheme(m) {
+    theme = m; localStorage.setItem('cfg_theme', m);
+    var s = document.getElementById('cfg-theme-style');
+    if(!s){ s=document.createElement('style'); s.id='cfg-theme-style'; document.head.appendChild(s); }
+    s.textContent = m==='dark'
+      ? 'body,html{background:#111 !important;color:#f0f0f0 !important}.page{background:#111 !important}.w-btn{background:#1e1e1e !important;border-color:#333 !important}.w-btn-name{color:#f0f0f0 !important}.w-btn-desc{color:#999 !important}.logo{color:#f0f0f0 !important}.tagline{color:#999 !important}.wiz-badge{border-color:#333 !important}.wiz-by{color:#999 !important}.net-note{color:#999 !important}.guest-btn{color:#999 !important;border-color:#333 !important}.cfg-btn{background:#1e1e1e !important;border-color:#333 !important;color:#f0f0f0 !important}.cfg-menu{background:#1e1e1e !important;border-color:#333 !important}.cfg-row{color:#f0f0f0 !important;border-color:#333 !important}.top-bar,.store-card,.menu-row,.cart-bar,.pay-section,.app-header,.tab-bar{background:#1e1e1e !important;border-color:#333 !important}.top-title,.menu-name,.cart-total,.pay-total-amount,.sc-name,.mc-name{color:#f0f0f0 !important}'
+      : '';
+    var icon = document.getElementById('cfgThemeIcon');
+    if(icon) icon.textContent = m==='dark'?'🌙':'☀️';
+    ['tl','td'].forEach(function(id,i){
+      var e=document.getElementById(id);
+      if(e) e.style.display=['light','dark'][i]===m?'inline':'none';
+    });
+  }
+
+  window.cfgToggle = function(){
+    var m=document.getElementById('cfgMenu');
+    var o=document.getElementById('cfgOv');
+    if(!m) return;
+    var on=m.classList.toggle('on');
+    o.classList.toggle('on',on);
+  };
+  window.cfgClose = function(){
+    var m=document.getElementById('cfgMenu');
+    var o=document.getElementById('cfgOv');
+    if(m) m.classList.remove('on');
+    if(o) o.classList.remove('on');
+  };
+  window.cfgLang   = function(l){ applyLang(l);  cfgClose(); };
+  window.cfgTheme  = function(m){ applyTheme(m); cfgClose(); };
+  window.cfgDex    = function(){ cfgClose(); window.open('https://dex.wizclass.net','_blank'); };
+  window.cfgLogout = function(){
+    cfgClose();
+    var msg=lang==='en'?'Logout?':lang==='zh'?'退出登录？':'로그아웃 할까요?';
+    if(!confirm(msg)) return;
+    localStorage.clear(); location.reload();
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    applyLang(lang); applyTheme(theme);
+  });
+})();
+/* ==== 설정 끝 ==== */
+</script>
 </head>
 <body>
 
 <!-- ══════════════════════════
      PAGE 1: 지갑 연결
 ══════════════════════════ -->
-<div class="page on" id="pg-wallet">
+    </div>
+  </div>
+</div>
+
+<div class="page on" id="pg-wallet" style="position:relative;">
+  <div class="cfg-wrap">
+    <button class="cfg-btn" id="cfgBtn" onclick="cfgToggle()">
+      <span id="cfgLang" style="font-size:20px;">🇰🇷</span>
+      <span id="cfgThemeIcon" style="font-size:16px;">☀️</span>
+    </button>
+    <div class="cfg-menu" id="cfgMenu">
+      <div class="cfg-sec">언어 / Language</div>
+      <div class="cfg-row" onclick="cfgLang('ko')"><span>🇰🇷 한국어</span><span class="cfg-chk" id="lk">✓</span></div>
+      <div class="cfg-row" onclick="cfgLang('en')"><span>🇺🇸 English</span><span class="cfg-chk" id="le" style="display:none">✓</span></div>
+      <div class="cfg-row" onclick="cfgLang('zh')"><span>🇨🇳 中文</span><span class="cfg-chk" id="lz" style="display:none">✓</span></div>
+      <div class="cfg-sec" style="margin-top:4px">테마 / Theme</div>
+      <div class="cfg-row" onclick="cfgTheme('light')"><span>☀️ 라이트</span><span class="cfg-chk" id="tl">✓</span></div>
+      <div class="cfg-row" onclick="cfgTheme('dark')"><span>🌙 다크</span><span class="cfg-chk" id="td" style="display:none">✓</span></div>
+      <div class="cfg-sec" style="margin-top:4px">서비스</div>
+      <div class="cfg-row" onclick="cfgDex()"><span>💱 WizDEX</span></div>
+      <div class="cfg-row red" onclick="cfgLogout()"><span>⏏ 로그아웃</span></div>
+    </div>
+  </div>
+  <div class="cfg-ov" id="cfgOv" onclick="cfgClose()"></div>
+
   <div class="logo">Wiz<span>POS</span></div>
-  <div class="tagline">더 편한 글로벌 올인원 포스</div>
+  <div class="tagline"><span id="i-tagline">더 편한 글로벌 올인원 포스</span></div>
   <div class="wiz-badge">
     <div class="wiz-dot"></div>
     <span class="wiz-name">WizChain</span>
@@ -196,7 +362,7 @@ body{max-width:430px;margin:0 auto;position:relative}
       <span class="w-btn-icon">🦊</span>
       <div>
         <div class="w-btn-name">MetaMask</div>
-        <div class="w-btn-desc">브라우저 익스텐션 / 모바일 앱</div>
+        <div class="w-btn-desc"><span id="i-mm">브라우저 익스텐션 / 모바일 앱</span></div>
       </div>
       <span class="w-btn-arr">→</span>
     </button>
@@ -204,15 +370,15 @@ body{max-width:430px;margin:0 auto;position:relative}
       <span class="w-btn-icon">🛡️</span>
       <div>
         <div class="w-btn-name">Trust Wallet</div>
-        <div class="w-btn-desc">모바일 앱으로 연결</div>
+        <div class="w-btn-desc"><span id="i-tw">모바일 앱으로 연결</span></div>
       </div>
       <span class="w-btn-arr">→</span>
     </button>
-    <button class="w-btn wc" onclick="connectWC()">
-      <span class="w-btn-icon">🔗</span>
+    <button class="w-btn" onclick="cfgDex()" style="border-color:#7c3aed;">
+      <span class="w-btn-icon">💱</span>
       <div>
-        <div class="w-btn-name">WalletConnect</div>
-        <div class="w-btn-desc">300+ 지갑 QR 연결</div>
+        <div class="w-btn-name" style="color:#7c3aed;">WizDEX</div>
+        <div class="w-btn-desc"><span id="i-dex">WizChain 탈중앙화 거래소</span></div>
       </div>
       <span class="w-btn-arr">→</span>
     </button>
@@ -384,14 +550,35 @@ body{max-width:430px;margin:0 auto;position:relative}
         <input class="modal-input" id="mEmoji" placeholder="☕" style="font-size:20px;text-align:center">
       </div>
     </div>
-    <div class="modal-row">
-      <div class="modal-form-group">
-        <label class="modal-label">가격 (원) *</label>
-        <input class="modal-input" id="mPrice" type="number" placeholder="4500">
+    <!-- 가격 입력 (원화 ↔ 달러 연동) -->
+    <div class="modal-form-group">
+      <label class="modal-label">가격 *</label>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;">
+        <div style="position:relative;">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);font-weight:700;">₩</span>
+          <input class="modal-input" id="mPrice" type="number" placeholder="4500"
+            style="padding-left:28px;" oninput="syncPrice('won')">
+        </div>
+        <div style="text-align:center;color:var(--muted);font-size:18px;">⇄</div>
+        <div style="position:relative;">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);font-weight:700;">$</span>
+          <input class="modal-input" id="mPriceUsd" type="number" placeholder="3.33"
+            style="padding-left:28px;" step="0.01" oninput="syncPrice('usd')">
+        </div>
       </div>
+      <div style="text-align:right;margin-top:5px;font-size:12px;color:var(--muted);" id="rateNote">
+        기준환율: 1 USD = <span id="currentRate">1,350</span>원
+      </div>
+    </div>
+    <div class="modal-row">
       <div class="modal-form-group">
         <label class="modal-label">OZ 배율</label>
         <input class="modal-input" id="mReward" type="number" placeholder="1" step="0.5">
+      </div>
+      <div class="modal-form-group">
+        <label class="modal-label">USDW 금액</label>
+        <input class="modal-input" id="mPriceUsdw" readonly placeholder="자동계산"
+          style="background:var(--bg);color:var(--accent);font-weight:700;">
       </div>
     </div>
     <div class="modal-form-group">
@@ -404,486 +591,6 @@ body{max-width:430px;margin:0 auto;position:relative}
 </div>
 
 <script>
-/* -- API 설정 -- */
-const API = 'https://pos-api.wizclass.net';
-
-async function api(method, path, body) {
-  try {
-    const res = await fetch(API + path, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(5000)
-    });
-    return await res.json();
-  } catch(e) {
-    console.warn('API 오류:', e.message);
-    return null;
-  }
-}
-
-/* -- 상태 -- */
-let walletAddr = '';
-let store = null;       // { name, cat, addr, wallet }
-let menus = [];         // [{ id, name, cat, emoji, price, reward, desc, soldout }]
-let orders = [];        // [{ id, no, items, total, oz, status, time }]
-let nextMenuId = 1;
-let nextOrderId = 1;
-
-/* -- 페이지 전환 -- */
-function goPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
-  document.getElementById(id).classList.add('on');
-  window.scrollTo(0, 0);
-}
-
-function switchTab(tab, el) {
-  const map = { orders:'pg-orders', menus:'pg-menus', stats:'pg-stats' };
-  // 탭 버튼 active 동기화
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
-  // 해당 페이지의 같은 탭 버튼들도 모두 off
-  el.classList.add('on');
-  // 같은 인덱스 위치의 다른 페이지 탭도 on 처리
-  const idx = Array.from(el.parentElement.children).indexOf(el);
-  document.querySelectorAll('.tab-bar').forEach(bar => {
-    bar.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('on', i===idx));
-  });
-  if (tab === 'stats') updateStats();
-  if (tab === 'menus') renderMenuCards();
-  if (tab === 'orders') renderOrders();
-  goPage(map[tab]);
-}
-
-/* -- 에러/로딩 -- */
-function showErr(msg) { const e=document.getElementById('errBox'); e.textContent=msg; e.style.display='block'; }
-function hideErr() { document.getElementById('errBox').style.display='none'; }
-function showLoad(v) { document.getElementById('loadBox').style.display=v?'block':'none'; }
-
-/* -- ethereum 감지 -- */
-function detectEthereum() {
-  return new Promise(resolve => {
-    if (window.ethereum) return resolve(window.ethereum);
-    if (window.web3?.currentProvider) return resolve(window.web3.currentProvider);
-    // 없으면 최대 500ms 대기
-    let n = 0;
-    const t = setInterval(() => {
-      if (window.ethereum) { clearInterval(t); resolve(window.ethereum); }
-      else if (window.web3?.currentProvider) { clearInterval(t); resolve(window.web3.currentProvider); }
-      else if (++n > 5) { clearInterval(t); resolve(null); }
-    }, 100);
-  });
-}
-
-/* -- 브라우저 환경 감지 -- */
-function getEnv() {
-  const ua = navigator.userAgent.toLowerCase();
-  return {
-    isKakao:    ua.includes('kakaotalk'),
-    isSamsung:  ua.includes('samsungbrowser'),
-    isMetaMask: ua.includes('metamask'),
-    isTrust:    ua.includes('trust'),
-    isMobile:   /android|iphone|ipad/i.test(ua),
-  };
-}
-
-/* -- MetaMask 딥링크 -- */
-function openMetaMask() {
-  const url = location.href.replace(/^https?:\/\//, '');
-  window.location.href = 'https://metamask.app.link/dapp/' + url;
-}
-
-/* -- 게스트 모드 -- */
-function guestMode() {
-  walletAddr = '';
-  // 데모 매장 설정
-  store = { name: '데모 매장', cat: '☕ 카페', addr: '', wallet: '', serverId: null };
-  menus = [
-    { id:1, name:'아메리카노', cat:'커피', emoji:'☕', price:4500, reward:1, desc:'진한 에스프레소', soldout:false },
-    { id:2, name:'카페라떼', cat:'커피', emoji:'🥛', price:5000, reward:1.5, desc:'부드러운 라떼', soldout:false },
-    { id:3, name:'치즈케이크', cat:'디저트', emoji:'🍰', price:7000, reward:3, desc:'뉴욕 스타일', soldout:false },
-  ];
-  nextMenuId = 4;
-  enterDashboard();
-}
-
-/* -- MetaMask 연결 -- */
-async function connectMM() {
-  hideErr();
-  const env = getEnv();
-  // 카카오/삼성/일반모바일 -> 즉시 MetaMask 앱으로
-  if (env.isKakao || env.isSamsung || (env.isMobile && !env.isMetaMask && !env.isTrust)) {
-    openMetaMask(); return;
-  }
-  const p = await detectEthereum();
-  if (!p) { openMetaMask(); return; }
-  await connectWallet(p);
-}
-
-/* -- WalletConnect 연결 -- */
-async function connectWC() {
-  hideErr();
-  const env = getEnv();
-  if (env.isKakao || env.isSamsung || (env.isMobile && !env.isMetaMask && !env.isTrust)) {
-    openMetaMask(); return;
-  }
-  const p = await detectEthereum();
-  if (!p) { openMetaMask(); return; }
-  await connectWallet(p);
-}
-
-/* -- Trust Wallet 연결 -- */
-async function connectTW() {
-  hideErr();
-  const env = getEnv();
-  const twUrl = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(location.href);
-  if (env.isKakao || env.isSamsung || (env.isMobile && !env.isMetaMask && !env.isTrust)) {
-    window.location.href = twUrl; return;
-  }
-  const p = await detectEthereum();
-  if (!p) { window.location.href = twUrl; return; }
-  await connectWallet(p);
-}
 
 
-/* -- 매장 등록 -- */
-async function registerStore() {
-  const name = document.getElementById('regName').value.trim();
-  if (!name) { alert('매장명을 입력해주세요.'); return; }
-  const btn = document.querySelector('.reg-btn');
-  btn.textContent = '등록 중...'; btn.disabled = true;
 
-  // 서버에 매장 등록
-  const data = await api('POST', '/api/stores', {
-    name,
-    cat: document.getElementById('regCat').value,
-    emoji: '🏪',
-    lat: 37.5665, lng: 126.9780, // 기본값 (서울)
-    address: document.getElementById('regAddr').value.trim(),
-    wallet_address: walletAddr.toLowerCase()
-  });
-
-  if (data && data.ok && data.store) {
-    store = { ...data.store, serverId: data.store.id };
-    localStorage.setItem('wizpos_store', JSON.stringify(store));
-    connectWS(data.store.id);
-  } else {
-    // 서버 실패 시 로컬 저장
-    store = { name, cat: document.getElementById('regCat').value,
-      addr: document.getElementById('regAddr').value.trim(), wallet: walletAddr };
-    localStorage.setItem('wizpos_store', JSON.stringify(store));
-    if (data && data.error) alert('서버 등록 실패: ' + data.error + ' 로컬 모드로 계속합니다.');
-  }
-  btn.textContent = '매장 등록하기 ->'; btn.disabled = false;
-  enterDashboard();
-}
-
-/* -- 대시보드 진입 -- */
-function enterDashboard() {
-  document.querySelectorAll('.app-store').forEach(el => el.textContent = store.name);
-  goPage('pg-orders');
-  renderOrders();
-  loadOrders(); // 서버에서 최근 주문 로드
-}
-
-/* -- 주문 렌더 -- */
-function renderItems(items) {
-  if (!items) return '';
-  return items.map(i =>
-    '<div class="oc-item-row">' +
-    '<span class="oc-item-name">' + (i.emoji||'') + ' ' + i.name + ' x' + i.qty + '</span>' +
-    '<span class="oc-item-price">' + (i.price*i.qty).toLocaleString() + '</span>' +
-    '</div>'
-  ).join('');
-}
-
-function renderOrders() {
-  const body = document.getElementById('ordersBody');
-  if (!orders.length) {
-    body.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">아직 주문이 없습니다</div></div>`;
-    return;
-  }
-  // 최신순
-  const sorted = [...orders].reverse();
-  body.innerHTML = sorted.map(o => `
-    <div class="order-card${o.status==='new'?' new-order':''}">
-      <div class="oc-head">
-        <div>
-          <div class="oc-no">#${o.no}</div>
-          <div class="oc-time">${o.time}</div>
-        </div>
-        <span class="oc-status ${o.status}">${statusLabel(o.status)}</span>
-      </div>
-      <div class="oc-items">
-        ${renderItems(o.items)}
-      </div>
-      <div class="oc-foot">
-        <div class="oc-total">₩${o.total.toLocaleString()}</div>
-        <div class="oc-btns">
-          ${o.status==='new' ? '<button class="oc-btn accept" onclick="setStatus('+o.id+',\'making\')">수락</button>' : ''}
-          ${o.status==='making' ? '<button class="oc-btn complete" onclick="setStatus('+o.id+',\'done\')">완료</button>' : ''}
-          ${o.status==='done' ? '<span style="font-size:13px;color:var(--muted)">완료됨</span>' : ''}
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function statusLabel(s) {
-  return {new:'신규 주문', making:'제조 중', done:'완료'}[s] || s;
-}
-
-async function setStatus(id, status) {
-  const o = orders.find(x => x.id===id);
-  if (!o) return;
-  o.status = status;
-  renderOrders();
-  updateStats();
-  // 서버 상태 업데이트
-  if (o.serverId) {
-    await api('PUT', '/api/orders/' + o.serverId + '/status', { status });
-  }
-}
-
-/* 테스트용 더미 주문 추가 */
-function addDemoOrder() {
-  const sampleItems = menus.filter(m=>!m.soldout).slice(0,2).map(m=>({...m,qty:1}));
-  if (!sampleItems.length) { alert('메뉴를 먼저 추가해주세요.'); return; }
-  const total = sampleItems.reduce((s,i)=>s+i.price,0);
-  const oz = sampleItems.reduce((s,i)=>s+i.price/100*i.reward,0);
-  const no = String(Date.now()).slice(-6);
-  const now = new Date();
-  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-  orders.push({ id:nextOrderId++, no, items:sampleItems, total, oz, status:'new', time });
-  renderOrders();
-  updateStats();
-}
-
-/* -- 메뉴 관리 -- */
-function renderMenuCards() {
-  const cnt = document.getElementById('menuCount');
-  cnt.textContent = `메뉴 ${menus.length}개`;
-  if (!menus.length) {
-    document.getElementById('menuCards').innerHTML = `
-      <div class="empty-state" style="padding:48px 20px">
-        <div class="empty-icon">🍽</div>
-        <div class="empty-text">메뉴를 추가해주세요</div>
-      </div>`;
-    return;
-  }
-  document.getElementById('menuCards').innerHTML = menus.map(m => `
-    <div class="menu-card">
-      <div class="mc-emoji">${m.emoji||'🍽'}</div>
-      <div class="mc-info">
-        <div class="mc-name">${m.name}${m.soldout?' <span style="font-size:11px;color:var(--warn)">[품절]</span>':''}</div>
-        <div class="mc-cat">${m.cat}</div>
-        <div>
-          <span class="mc-price">₩${m.price.toLocaleString()}</span>
-          <span class="mc-rw">${m.reward}x OZ</span>
-        </div>
-      </div>
-      <div class="mc-actions">
-        <button class="mc-toggle${m.soldout?' soldout':''}" onclick="toggleSoldout(${m.id})">${m.soldout?'판매재개':'품절처리'}</button>
-        <button class="mc-del" onclick="deleteMenu(${m.id})">삭제</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function openAddMenu() { document.getElementById('addMenuModal').classList.add('on'); }
-function closeAddMenu() {
-  document.getElementById('addMenuModal').classList.remove('on');
-  ['mName','mCat','mEmoji','mPrice','mReward','mDesc'].forEach(id => document.getElementById(id).value='');
-}
-
-function saveMenu() {
-  const name = document.getElementById('mName').value.trim();
-  const price = parseInt(document.getElementById('mPrice').value);
-  if (!name || !price) { alert('메뉴명과 가격은 필수입니다.'); return; }
-  const menu = {
-    id: nextMenuId++,
-    name,
-    cat: document.getElementById('mCat').value.trim() || '기타',
-    emoji: document.getElementById('mEmoji').value.trim() || '🍽',
-    price,
-    reward: parseFloat(document.getElementById('mReward').value) || 1,
-    desc: document.getElementById('mDesc').value.trim(),
-    soldout: false
-  };
-  menus.push(menu);
-  saveMenus();
-  renderMenuCards();
-  updateStats();
-  closeAddMenu();
-}
-
-function toggleSoldout(id) {
-  const m = menus.find(x=>x.id===id);
-  if (m) { m.soldout=!m.soldout; saveMenus(); renderMenuCards(); updateStats(); }
-}
-
-function deleteMenu(id) {
-  if (!confirm('메뉴를 삭제할까요?')) return;
-  menus = menus.filter(x=>x.id!==id);
-  saveMenus();
-  renderMenuCards();
-  updateStats();
-}
-
-function saveMenus() {
-  localStorage.setItem('wizpos_menus', JSON.stringify(menus));
-  // 서버에도 동기화
-  if (store && store.serverId) {
-    api('PUT', '/api/stores/' + store.serverId + '/menus', {
-      menus: menus.map(m => ({
-        name: m.name, cat: m.cat, emoji: m.emoji,
-        price: m.price, reward: m.reward, soldout: m.soldout, desc: m.desc || ''
-      }))
-    });
-  }
-}
-
-/* -- 매출 통계 -- */
-function updateStats() {
-  const done = orders.filter(o=>o.status==='done');
-  const total = done.reduce((s,o)=>s+o.total,0);
-  const oz = done.reduce((s,o)=>s+o.oz,0);
-  document.getElementById('statSales').textContent = '₩'+total.toLocaleString();
-  document.getElementById('statCount').textContent = done.length+'건';
-  document.getElementById('statOZ').textContent = oz.toFixed(1)+' OZ';
-  document.getElementById('statMenus').textContent = menus.filter(m=>!m.soldout).length+'개';
-  // 주문 내역
-  const txList = document.getElementById('txList');
-  if (!done.length) {
-    txList.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">완료된 주문이 없습니다</div>';
-    return;
-  }
-  txList.innerHTML = [...done].reverse().map(o=>`
-    <div class="tx-row">
-      <div class="tx-left">
-        <div class="tx-items">${o.items ? o.items.map(i=>i.name+' x'+i.qty).join(', ') : ''}</div>
-        <div class="tx-time">#${o.no} · ${o.time}</div>
-      </div>
-      <div class="tx-amount">₩${o.total.toLocaleString()}</div>
-    </div>
-  `).join('');
-}
-
-/* -- WebSocket 실시간 주문 수신 -- */
-let ws = null;
-function connectWS(storeId) {
-  if (ws) ws.close();
-  const wsUrl = 'wss://pos-api.wizclass.net/ws?storeId=' + storeId;
-  ws = new WebSocket(wsUrl);
-  ws.onopen = () => console.log('✅ WebSocket 연결됨');
-  ws.onmessage = (e) => {
-    try {
-      const msg = JSON.parse(e.data);
-      if (msg.type === 'new_order' && msg.order) {
-        // 서버에서 새 주문 수신
-        const o = msg.order;
-        orders.push({
-          id: nextOrderId++,
-          serverId: o.id,
-          no: o.order_no,
-          items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
-          total: parseFloat(o.total_wusd),
-          oz: parseFloat(o.total_oz || 0),
-          status: 'new',
-          time: new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})
-        });
-        renderOrders();
-        updateStats();
-        // 알림음
-        try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA').play(); } catch(_) {}
-      } else if (msg.type === 'order_status') {
-        const o = orders.find(x => x.serverId == msg.orderId);
-        if (o) { o.status = msg.status; renderOrders(); updateStats(); }
-      }
-    } catch(err) { console.warn('WS 메시지 파싱 오류', err); }
-  };
-  ws.onclose = () => {
-    // 5초 후 재연결
-    setTimeout(() => { if (store && store.serverId) connectWS(store.serverId); }, 5000);
-  };
-  ws.onerror = (e) => console.warn('WebSocket 오류', e);
-}
-
-/* -- 서버에서 주문 목록 로드 -- */
-async function loadOrders() {
-  if (!store || !store.serverId) return;
-  const data = await api('GET', '/api/orders/' + store.serverId + '?limit=50');
-  if (data && data.orders) {
-    orders = data.orders.map(o => ({
-      id: nextOrderId++,
-      serverId: o.id,
-      no: o.order_no,
-      items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
-      total: parseFloat(o.total_wusd),
-      oz: parseFloat(o.total_oz || 0),
-      status: o.status,
-      time: new Date(o.created_at).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})
-    }));
-    renderOrders();
-    updateStats();
-  }
-}
-
-/* -- 모달 배경 클릭 닫기 -- */
-document.getElementById('addMenuModal').addEventListener('click', function(e) {
-  if (e.target === this) closeAddMenu();
-});
-
-/* -- 초기화 -- */
-window.addEventListener('DOMContentLoaded', function() {
-  const saved = localStorage.getItem('wizpos_addr');
-  if (saved && window.ethereum) {
-    window.ethereum.request({method:'eth_accounts'}).then(accounts => {
-      if (accounts.length) {
-        walletAddr = accounts[0];
-        const savedStore = localStorage.getItem('wizpos_store');
-        if (savedStore) {
-          store = JSON.parse(savedStore);
-          menus = JSON.parse(localStorage.getItem('wizpos_menus') || '[]');
-          nextMenuId = menus.length ? Math.max(...menus.map(m=>m.id)) + 1 : 1;
-          enterDashboard();
-        } else {
-          document.getElementById('connAddr').textContent = walletAddr.slice(0,6)+'...'+walletAddr.slice(-4);
-          goPage('pg-register');
-        }
-      }
-    }).catch(()=>{});
-  }
-});
-</script>
-
-  <script>
-    // Service Worker 등록 (PWA 오프라인 지원)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('Service Worker 등록됨'))
-          .catch(() => {}); // sw.js 없어도 무시
-      });
-    }
-    // iOS Safari PWA 설치 안내
-    window.addEventListener('DOMContentLoaded', () => {
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      const isStandalone = window.navigator.standalone;
-      if (isIOS && !isStandalone) {
-        // 첫 방문 시 한 번만 안내
-        if (!localStorage.getItem('pwa_hint_shown')) {
-          setTimeout(() => {
-            const hint = document.createElement('div');
-            hint.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;text-align:center;z-index:9999;max-width:280px;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,.3)';
-            hint.innerHTML = '📲 홈 화면에 추가하면<br>앱처럼 사용할 수 있어요!<br><small style="color:#aaa">Safari -> 공유버튼 -> 홈 화면에 추가</small>';
-            hint.onclick = () => { hint.remove(); localStorage.setItem('pwa_hint_shown','1'); };
-            document.body.appendChild(hint);
-            setTimeout(() => hint.remove(), 6000);
-            localStorage.setItem('pwa_hint_shown','1');
-          }, 3000);
-        }
-      }
-    });
-  </script>
-</body>
-</html>
