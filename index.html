@@ -4,12 +4,108 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WizPOS</title>
+
+<!-- ====== 카카오톡 인앱 브라우저 우회 (최우선 실행) ====== -->
+<script>
+(function(){
+  var ua = navigator.userAgent || '';
+  var isKakao = /KAKAOTALK/i.test(ua);
+  if (!isKakao) return;
+
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+  var currentUrl = location.href;
+
+  if (isAndroid) {
+    var intentUrl = 'intent://' + currentUrl.replace(/^https?:\/\//, '')
+      + '#Intent;scheme=https;package=com.android.chrome;end';
+    location.href = intentUrl;
+    setTimeout(function(){ showKakaoGuide('android'); }, 300);
+    return;
+  }
+
+  if (isIOS) {
+    showKakaoGuide('ios');
+    return;
+  }
+
+  showKakaoGuide('other');
+
+  function showKakaoGuide(platform) {
+    document.addEventListener('DOMContentLoaded', renderGuide);
+    if (document.readyState !== 'loading') renderGuide();
+
+    function renderGuide() {
+      document.body.style.cssText = 'margin:0;padding:0;background:#111;font-family:"Noto Sans KR",sans-serif;';
+
+      var guide = document.createElement('div');
+      guide.style.cssText = [
+        'position:fixed;inset:0;z-index:99999;',
+        'display:flex;flex-direction:column;align-items:center;justify-content:center;',
+        'background:#111;padding:32px 28px;text-align:center;'
+      ].join('');
+
+      var iosExtra = platform === 'ios'
+        ? '<div style="background:#1a1a1a;border:1.5px solid #333;border-radius:14px;padding:20px 16px;margin-bottom:24px;text-align:left;">'
+          + '<div style="font-size:14px;font-weight:700;color:#f0f0f0;margin-bottom:12px;">📱 열기 방법</div>'
+          + '<div style="font-size:13px;color:#aaa;line-height:2;">'
+          + '1️⃣ 화면 우측 하단 <b style="color:#fff;">···</b> (더보기) 탭<br>'
+          + '2️⃣ <b style="color:#fff;">Safari로 열기</b> 선택<br>'
+          + '3️⃣ MetaMask 지갑 연결 후 이용'
+          + '</div></div>'
+        : '<div style="background:#1a1a1a;border:1.5px solid #333;border-radius:14px;padding:20px 16px;margin-bottom:24px;text-align:left;">'
+          + '<div style="font-size:14px;font-weight:700;color:#f0f0f0;margin-bottom:12px;">📱 열기 방법</div>'
+          + '<div style="font-size:13px;color:#aaa;line-height:2;">'
+          + '1️⃣ 화면 우측 상단 <b style="color:#fff;">⋮</b> (더보기) 탭<br>'
+          + '2️⃣ <b style="color:#fff;">다른 브라우저로 열기</b> 선택<br>'
+          + '3️⃣ Chrome 선택 후 MetaMask 연결'
+          + '</div></div>';
+
+      guide.innerHTML = ''
+        + '<div style="font-family:Outfit,sans-serif;font-weight:900;font-size:44px;letter-spacing:-1px;color:#f0f0f0;margin-bottom:6px;">'
+        + 'Wiz<span style="color:#00a86b;">POS</span></div>'
+        + '<div style="font-size:13px;color:#666;letter-spacing:2px;margin-bottom:32px;">MERCHANT PORTAL</div>'
+        + '<div style="background:#1a1a1a;border:2px solid #f6851b;border-radius:16px;padding:18px 16px;margin-bottom:20px;width:100%;max-width:320px;">'
+        + '<div style="font-size:24px;margin-bottom:6px;">🦊</div>'
+        + '<div style="font-size:15px;font-weight:700;color:#f6851b;margin-bottom:4px;">MetaMask 연결 필요</div>'
+        + '<div style="font-size:13px;color:#888;line-height:1.6;">카카오톡 내 브라우저는 지갑 연결을 지원하지 않아요.<br>외부 브라우저로 열어주세요.</div>'
+        + '</div>'
+        + '<div style="width:100%;max-width:320px;">'
+        + iosExtra
+        + '</div>'
+        + '<button onclick="copyAndOpen()" style="width:100%;max-width:320px;padding:16px;background:#00a86b;border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;margin-bottom:12px;box-shadow:0 4px 16px rgba(0,168,107,.3);">'
+        + '🔗 링크 복사하기</button>'
+        + '<div id="copyMsg" style="font-size:13px;color:#00a86b;font-weight:600;min-height:20px;"></div>';
+
+      document.body.innerHTML = '';
+      document.body.appendChild(guide);
+
+      window.copyAndOpen = function() {
+        var url = currentUrl;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function(){
+            document.getElementById('copyMsg').textContent = '✅ 링크가 복사되었습니다! 브라우저에 붙여넣기 해주세요.';
+          }).catch(fallback);
+        } else { fallback(); }
+        function fallback() {
+          var t = document.createElement('textarea');
+          t.value = url; t.style.cssText='position:fixed;opacity:0;top:0;left:0;';
+          document.body.appendChild(t); t.select();
+          try { document.execCommand('copy'); document.getElementById('copyMsg').textContent='✅ 링크가 복사되었습니다! 브라우저에 붙여넣기 해주세요.'; }
+          catch(_){ document.getElementById('copyMsg').textContent='주소창에 직접 입력해 주세요: '+url; }
+          document.body.removeChild(t);
+        }
+      };
+    }
+  }
+})();
+</script>
+<!-- ====== 카카오톡 인앱 브라우저 우회 끝 ====== -->
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="WizPOS">
-<link rel="manifest" href="manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 
@@ -476,7 +572,7 @@ body{max-width:430px;margin:0 auto}
 .w-btn:active{opacity:.75}
 .w-btn.mm{border-color:#f6851b}
 .w-btn.guest-border{border-color:#7c3aed}
-.partner-banner{width:100%;border:2px solid #00a86b;border-radius:16px;padding:18px 20px;margin-bottom:12px;cursor:pointer;background:transparent;min-height:76px;box-sizing:border-box;display:flex;align-items:center;gap:16px;}
+.partner-banner{width:100%;border:2px solid #00a86b;border-radius:16px;padding:18px 20px;margin-bottom:12px;cursor:pointer;background:var(--surface);min-height:76px;box-sizing:border-box;display:flex;align-items:center;gap:16px;}
 .w-btn.mm{border-color:#f6851b}
 .w-btn.tw{border-color:#3375ff}
 .w-btn.dex{border-color:#0ea5e9}
@@ -667,7 +763,7 @@ body{max-width:430px;margin:0 auto}
     <div class="partner-banner" onclick="openPartnerModal()">
       <div style="flex:1;">
         <div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#00a86b;letter-spacing:-0.5px;margin-bottom:6px;">Wiz <span style="color:var(--text);">Referral Alliance</span></div>
-        <div style="font-size:13px;color:var(--muted);font-weight:500;line-height:1.5;">가치, 연결. WizPAY 엠버서더 파트너십 프로그램</div>
+        <div style="font-size:13px;color:var(--muted);font-weight:500;line-height:1.5;">가치, 연결. WizPAY 파트너십 프로그램</div>
       </div>
       <span class="w-btn-arr">→</span>
     </div>
