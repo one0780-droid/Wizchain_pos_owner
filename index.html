@@ -4,122 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WizPOS</title>
-
-<!-- ====== 카카오톡 인앱 브라우저 우회 (최우선 실행) ====== -->
-<script>
-(function(){
-  var ua = navigator.userAgent || '';
-  var isKakao = /KAKAOTALK/i.test(ua);
-  if (!isKakao) return;
-
-  var isAndroid = /Android/i.test(ua);
-  var isIOS = /iPhone|iPad|iPod/i.test(ua);
-  var currentUrl = location.href;
-  var mmUrl = 'https://metamask.app.link/dapp/' + currentUrl.replace(/^https?:\/\//, '');
-
-  if (isAndroid) {
-    var intentUrl = 'intent://' + currentUrl.replace(/^https?:\/\//, '')
-      + '#Intent;scheme=https;package=com.android.chrome;end';
-    location.href = intentUrl;
-    setTimeout(function(){ showKakaoGuide('android'); }, 400);
-    return;
-  }
-
-  showKakaoGuide(isIOS ? 'ios' : 'other');
-
-  function showKakaoGuide(platform) {
-    document.addEventListener('DOMContentLoaded', renderGuide);
-    if (document.readyState !== 'loading') renderGuide();
-
-    function renderGuide() {
-      document.body.innerHTML = '';
-      document.body.style.cssText = 'margin:0;padding:0;background:#111;font-family:"Noto Sans KR",sans-serif;overflow-y:auto;';
-
-      var wrap = document.createElement('div');
-      wrap.style.cssText = 'min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 24px 48px;text-align:center;';
-
-      var iosContent = platform === 'ios' ? (
-        '<div id="wiz-tabs" style="display:flex;width:100%;max-width:320px;background:#222;border-radius:12px;padding:4px;margin-bottom:20px;">'
-        + '<button id="tab-mm" onclick="wizTab(\'mm\')" style="flex:1;padding:10px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;background:#333;color:#f6851b;box-shadow:0 1px 4px rgba(0,0,0,.3);">🦊 MetaMask</button>'
-        + '<button id="tab-safari" onclick="wizTab(\'safari\')" style="flex:1;padding:10px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;background:transparent;color:#666;">🧭 Safari</button>'
-        + '</div>'
-
-        + '<div id="panel-mm" style="width:100%;max-width:320px;">'
-        + '<div style="background:#1a1a1a;border:2px solid #f6851b;border-radius:16px;padding:20px 16px;margin-bottom:16px;">'
-        + '<div style="font-size:13px;color:#888;line-height:1.7;margin-bottom:16px;">MetaMask 앱이 설치되어 있으면<br>버튼 하나로 바로 연결됩니다.</div>'
-        + '<button onclick="openMetaMask()" style="width:100%;padding:16px;background:#f6851b;border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;box-shadow:0 4px 14px rgba(246,133,27,.35);">🦊 MetaMask로 열기</button>'
-        + '</div>'
-        + '<div id="mmMsg" style="font-size:12px;color:#666;min-height:18px;margin-bottom:4px;"></div>'
-        + '<div style="font-size:12px;color:#555;">MetaMask 미설치 시 App Store로 이동합니다</div>'
-        + '</div>'
-
-        + '<div id="panel-safari" style="display:none;width:100%;max-width:320px;">'
-        + '<div style="background:#1a1a1a;border:1.5px solid #333;border-radius:14px;padding:20px 16px;margin-bottom:16px;text-align:left;">'
-        + '<div style="font-size:14px;font-weight:700;color:#f0f0f0;margin-bottom:14px;">📱 Safari로 여는 방법</div>'
-        + '<div style="display:flex;flex-direction:column;gap:12px;">'
-        + '<div style="display:flex;align-items:flex-start;gap:12px;"><div style="width:28px;height:28px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:#aaa;">1</div><div style="font-size:13px;color:#aaa;line-height:1.5;padding-top:4px;">화면 우측 하단 <b style="color:#fff;">···</b> 버튼 탭</div></div>'
-        + '<div style="display:flex;align-items:flex-start;gap:12px;"><div style="width:28px;height:28px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:#aaa;">2</div><div style="font-size:13px;color:#aaa;line-height:1.5;padding-top:4px;"><b style="color:#fff;">Safari로 열기</b> 선택</div></div>'
-        + '<div style="display:flex;align-items:flex-start;gap:12px;"><div style="width:28px;height:28px;border-radius:50%;background:#00a86b;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:#fff;">3</div><div style="font-size:13px;color:#aaa;line-height:1.5;padding-top:4px;">Safari에서 MetaMask 지갑 연결</div></div>'
-        + '</div></div>'
-        + '<button onclick="copyLink()" style="width:100%;padding:14px;background:#00a86b;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;box-shadow:0 4px 14px rgba(0,168,107,.3);margin-bottom:8px;">🔗 링크 복사하기</button>'
-        + '<div id="copyMsg" style="font-size:13px;color:#00a86b;font-weight:600;min-height:20px;"></div>'
-        + '</div>'
-      ) : (
-        '<div style="width:100%;max-width:320px;">'
-        + '<div style="background:#1a1a1a;border:1.5px solid #333;border-radius:14px;padding:20px 16px;margin-bottom:16px;text-align:left;">'
-        + '<div style="font-size:14px;font-weight:700;color:#f0f0f0;margin-bottom:14px;">📱 Chrome으로 여는 방법</div>'
-        + '<div style="font-size:13px;color:#aaa;line-height:2;">1️⃣ 우측 상단 <b style="color:#fff;">⋮</b> → <b style="color:#fff;">다른 브라우저로 열기</b><br>2️⃣ Chrome 선택<br>3️⃣ MetaMask 연결 후 이용</div>'
-        + '</div>'
-        + '<button onclick="openMetaMask()" style="width:100%;padding:16px;background:#f6851b;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;margin-bottom:10px;">🦊 MetaMask로 열기</button>'
-        + '<button onclick="copyLink()" style="width:100%;padding:14px;background:#00a86b;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;">🔗 링크 복사하기</button>'
-        + '<div id="copyMsg" style="font-size:13px;color:#00a86b;font-weight:600;min-height:20px;margin-top:8px;"></div>'
-        + '</div>'
-      );
-
-      wrap.innerHTML = ''
-        + '<div style="font-family:Outfit,sans-serif;font-weight:900;font-size:48px;letter-spacing:-1px;color:#f0f0f0;margin-bottom:4px;line-height:1;">Wiz<span style="color:#00a86b;">POS</span></div>'
-        + '<div style="font-size:12px;color:#555;letter-spacing:3px;margin-bottom:28px;">MERCHANT PORTAL</div>'
-        + iosContent;
-
-      document.body.appendChild(wrap);
-
-      window.wizTab = function(t) {
-        var isMM = t === 'mm';
-        document.getElementById('tab-mm').style.cssText    = 'flex:1;padding:10px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:"Noto Sans KR",sans-serif;background:'+(isMM?'#333':'transparent')+';color:'+(isMM?'#f6851b':'#666')+';box-shadow:'+(isMM?'0 1px 4px rgba(0,0,0,.3)':'none')+';';
-        document.getElementById('tab-safari').style.cssText = 'flex:1;padding:10px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:"Noto Sans KR",sans-serif;background:'+(!isMM?'#333':'transparent')+';color:'+(!isMM?'#007aff':'#666')+';box-shadow:'+(!isMM?'0 1px 4px rgba(0,0,0,.3)':'none')+';';
-        document.getElementById('panel-mm').style.display     = isMM ? 'block' : 'none';
-        document.getElementById('panel-safari').style.display = isMM ? 'none'  : 'block';
-      };
-
-      window.openMetaMask = function() {
-        var msg = document.getElementById('mmMsg');
-        if(msg) msg.textContent = '🦊 MetaMask 앱 실행 중...';
-        location.href = mmUrl;
-        setTimeout(function(){
-          if(msg) msg.textContent = '앱이 열리지 않으면 App Store에서 MetaMask를 설치해 주세요.';
-        }, 2000);
-      };
-
-      window.copyLink = function() {
-        var msgEl = document.getElementById('copyMsg');
-        function setMsg(t){ if(msgEl) msgEl.textContent = t; }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(currentUrl).then(function(){ setMsg('✅ 복사 완료! 브라우저 주소창에 붙여넣기 해주세요.'); }).catch(fb);
-        } else { fb(); }
-        function fb(){
-          var el = document.createElement('textarea');
-          el.value = currentUrl; el.style.cssText='position:fixed;opacity:0;';
-          document.body.appendChild(el); el.select();
-          try{ document.execCommand('copy'); setMsg('✅ 복사 완료! 브라우저 주소창에 붙여넣기 해주세요.'); }
-          catch(_){ setMsg('주소: ' + currentUrl); }
-          document.body.removeChild(el);
-        }
-      };
-    }
-  }
-})();
-</script>
-<!-- ====== 카카오톡 인앱 브라우저 우회 끝 ====== -->
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -385,7 +269,19 @@ async function afterConnect(){
     }
   }
   const saved=localStorage.getItem('wizpos_store');
-  if(saved){ store=JSON.parse(saved); menus=JSON.parse(localStorage.getItem('wizpos_menus')||'[]'); if(store.serverId)connectWS(store.serverId); enterDashboard(); }
+  if(saved){
+    const savedStore=JSON.parse(saved);
+    // 저장된 지갑주소와 현재 지갑주소가 다르면 초기화
+    const savedWallet=(savedStore.wallet_address||savedStore.wallet||'').toLowerCase();
+    if(walletAddr && savedWallet && savedWallet !== walletAddr.toLowerCase()){
+      localStorage.removeItem('wizpos_store');
+      localStorage.removeItem('wizpos_menus');
+      const el=document.getElementById('connAddr'); if(el) el.textContent=walletAddr.slice(0,6)+'...'+walletAddr.slice(-4);
+      goPage('pg-register');
+    } else {
+      store=savedStore; menus=JSON.parse(localStorage.getItem('wizpos_menus')||'[]'); if(store.serverId)connectWS(store.serverId); enterDashboard();
+    }
+  }
   else { const el=document.getElementById('connAddr'); if(el) el.textContent=walletAddr.slice(0,6)+'...'+walletAddr.slice(-4); goPage('pg-register'); }
   showLoad(false);
 }
@@ -547,6 +443,14 @@ function openPartnerModal() {
 function closePartnerModal() {
   const m = document.getElementById('partnerModal');
   if(m) m.style.display = 'none';
+}
+
+function ownerLogout(){
+  if(!confirm('로그아웃 할까요?')) return;
+  localStorage.removeItem('wizpos_store');
+  localStorage.removeItem('wizpos_menus');
+  localStorage.removeItem('wizpos_addr');
+  location.reload();
 }
 </script>
 
@@ -739,7 +643,7 @@ body{max-width:430px;margin:0 auto}
       <div class="cfg-sec" style="margin-top:4px">테마 / Theme</div>
       <div class="cfg-row" onclick="cfgTheme('light')"><span>☀️ 라이트</span><span class="cfg-chk" id="tl">✓</span></div>
       <div class="cfg-row" onclick="cfgTheme('dark')"><span>🌙 다크</span><span class="cfg-chk" id="td" style="display:none">✓</span></div>
-
+      <div class="cfg-row red" onclick="ownerLogout()"><span>⏏ 로그아웃</span></div>
     </div>
   </div>
   <div class="cfg-ov" id="cfgOv" onclick="cfgClose()"></div>
