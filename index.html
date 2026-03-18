@@ -210,13 +210,12 @@ function openChrome() {
   const env = getEnv();
 
   if(env.isIOS) {
-    // iOS: googlechrome 스킴
     location.href = url.replace(/^https/, 'googlechromes').replace(/^http/, 'googlechrome');
     setTimeout(() => { location.href = url; }, 1500);
     return;
   }
 
-  // 안드로이드: Chrome intent
+  // 안드로이드: intent로 크롬 강제 실행
   const host = url.replace(/^https?:\/\//, '');
   location.href = 'intent://' + host +
     '#Intent;scheme=https;package=com.android.chrome;' +
@@ -267,7 +266,7 @@ async function connectMM() {
   hideErr();
   const env = getEnv();
 
-  // 카카오/인앱브라우저 → 크롬 강제 열기 (페이지 로드시 처리됨)
+  // 카카오/인앱브라우저 → 크롬 강제 실행
   if(env.isInApp) {
     openChrome();
     return;
@@ -285,16 +284,11 @@ async function connectMM() {
     if(p) { await connectWallet(p); return; }
   }
 
-  // 데스크탑 크롬/파이어폭스 → window.ethereum 체크
-  if(!env.isMobile) {
-    const p = await detectEthereum();
-    if(p) { await connectWallet(p); return; }
-    // 익스텐션 없으면 설치 페이지
-    openMetaMask();
-    return;
-  }
+  // window.ethereum 있으면 바로 연결 (MetaMask 익스텐션 or 내장)
+  const p = await detectEthereum();
+  if(p) { await connectWallet(p); return; }
 
-  // 모바일 크롬/삼성/기타 → MetaMask 앱 딥링크
+  // window.ethereum 없음 → MetaMask 딥링크 (앱 설치 유도)
   openMetaMask();
 }
 async function connectTW(){
