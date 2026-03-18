@@ -126,12 +126,12 @@ function showChainSwitchAlert(suffix) {
 
 async function switchToWizChain() {
   try {
-    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2803'}]});
+    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x27F3'}]});
   } catch(e) {
     if(e.code===4902||e.code===-32603){
       try {
         await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
-          chainId:'0x2803', chainName:'WizChain',
+          chainId:'0x27F3', chainName:'WizChain',
           nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},
           rpcUrls:['https://rpc.wizclass.net']
         }]});
@@ -211,23 +211,38 @@ function openChrome() {
 
   if(env.isIOS) {
     // iOS: googlechrome 스킴
-    const chromeUrl = url.replace(/^https/, 'googlechromes').replace(/^http/, 'googlechrome');
-    location.href = chromeUrl;
+    location.href = url.replace(/^https/, 'googlechromes').replace(/^http/, 'googlechrome');
     setTimeout(() => { location.href = url; }, 1500);
     return;
   }
 
-  // 안드로이드: intent로 크롬 강제 실행
+  // 안드로이드: Chrome intent
   const host = url.replace(/^https?:\/\//, '');
-  const intentUrl = 'intent://' + host +
+  location.href = 'intent://' + host +
     '#Intent;scheme=https;package=com.android.chrome;' +
     'S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
-  location.href = intentUrl;
 }
 
 function openMetaMask() {
   const dapp = location.href.replace(/^https?:\/\//, '');
-  location.href = 'https://metamask.app.link/dapp/' + dapp;
+  const env = getEnv();
+
+  if(env.isAndroid) {
+    // metamask:// 스킴 시도 (설치된 경우 앱 열림)
+    location.href = 'metamask://dapp/' + dapp;
+    // 앱 없으면 1.2초 후 app.link로 이동 (설치 페이지 포함)
+    setTimeout(() => {
+      location.href = 'https://metamask.app.link/dapp/' + dapp;
+    }, 1200);
+  } else if(env.isIOS) {
+    location.href = 'metamask://dapp/' + dapp;
+    setTimeout(() => {
+      location.href = 'https://metamask.app.link/dapp/' + dapp;
+    }, 1200);
+  } else {
+    // 데스크탑 → MetaMask 설치 안내
+    location.href = 'https://metamask.io/download/';
+  }
 }
 
 /* == 지갑 연결 == */
@@ -238,8 +253,8 @@ async function connectWallet(provider){
     const bp=new ethers.BrowserProvider(provider);
     await bp.send('eth_requestAccounts',[]);
     walletAddr=await (await bp.getSigner()).getAddress();
-    try { await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2803'}]}); }
-    catch(e){ if(e.code===4902||e.code===-32603){ try{ await provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x2803',chainName:'WizChain',nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},rpcUrls:['https://rpc.wizclass.net']}]}); }catch(_){} } }
+    try { await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x27F3'}]}); }
+    catch(e){ if(e.code===4902||e.code===-32603){ try{ await provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x27F3',chainName:'WizChain',nativeCurrency:{name:'WCN',symbol:'WCN',decimals:18},rpcUrls:['https://rpc.wizclass.net']}]}); }catch(_){} } }
     localStorage.setItem('wizpos_addr', walletAddr);
     await afterConnect();
   } catch(e){
@@ -248,26 +263,39 @@ async function connectWallet(provider){
   }
   showLoad(false);
 }
-async function connectMM(){
+async function connectMM() {
   hideErr();
   const env = getEnv();
 
-  // 카카오/네이버/인스타 등 인앱브라우저
+  // 카카오/인앱브라우저 → 크롬 강제 열기
   if(env.isInApp) {
     showKakaoGuide();
     return;
   }
 
-  // 모바일이지만 MetaMask/Trust 아님 → MetaMask 딥링크
-  if(env.isMobile && !env.isMetaMask && !env.isTrust) {
+  // MetaMask 내장브라우저 → 바로 연결
+  if(env.isMetaMask) {
+    const p = await detectEthereum();
+    if(p) { await connectWallet(p); return; }
+  }
+
+  // Trust Wallet 내장브라우저 → 바로 연결
+  if(env.isTrust) {
+    const p = await detectEthereum();
+    if(p) { await connectWallet(p); return; }
+  }
+
+  // 데스크탑 크롬/파이어폭스 → window.ethereum 체크
+  if(!env.isMobile) {
+    const p = await detectEthereum();
+    if(p) { await connectWallet(p); return; }
+    // 익스텐션 없으면 설치 페이지
     openMetaMask();
     return;
   }
 
-  // MetaMask 브라우저 or 데스크탑
-  const p = await detectEthereum();
-  if(!p){ openMetaMask(); return; }
-  await connectWallet(p);
+  // 모바일 크롬/삼성/기타 → MetaMask 앱 딥링크
+  openMetaMask();
 }
 async function connectTW(){
   hideErr(); const env=getEnv();
@@ -680,6 +708,8 @@ body{max-width:430px;margin:0 auto}
 .wb-balance-sym{font-size:11px;color:var(--muted);font-weight:600}
 .wb-loading{font-size:11px;color:var(--muted);animation:pulse 1s infinite}
 
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;}
+.modal-bg.on{display:flex;}
 </style>
 </head>
 <body>
