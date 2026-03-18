@@ -197,12 +197,28 @@ async function fetchRate() {
 /* == 지갑 감지 == */
 function getEnv(){
   const ua=navigator.userAgent.toLowerCase();
-  return {isKakao:ua.includes('kakaotalk'),isSamsung:ua.includes('samsungbrowser'),isMetaMask:ua.includes('metamask'),isTrust:ua.includes('trust'),isMobile:/android|iphone|ipad/i.test(ua)};
+  return {
+    isKakao:    ua.includes('kakaotalk'),
+    isNaver:    ua.includes('naver'),
+    isSamsung:  ua.includes('samsungbrowser'),
+    isMetaMask: ua.includes('metamask'),
+    isTrust:    ua.includes('trust'),
+    isAndroid:  ua.includes('android'),
+    isIOS:      /iphone|ipad|ipod/.test(ua),
+    isMobile:   /android|iphone|ipad/i.test(ua),
+    isInApp:    ua.includes('kakaotalk') || ua.includes('naver') || ua.includes('instagram') || ua.includes('facebook') || ua.includes('line') || ua.includes('twitter'),
+  };
 }
-function detectEthereum(){
-  return new Promise(resolve=>{
+function detectEthereum() {
+  return new Promise(resolve => {
     if(window.ethereum) return resolve(window.ethereum);
-    let n=0; const t=setInterval(()=>{ if(window.ethereum){clearInterval(t);resolve(window.ethereum);} else if(++n>5){clearInterval(t);resolve(null);} },100);
+    if(window.web3?.currentProvider) return resolve(window.web3.currentProvider);
+    let n=0;
+    const t=setInterval(()=>{
+      if(window.ethereum){clearInterval(t);resolve(window.ethereum);}
+      else if(window.web3?.currentProvider){clearInterval(t);resolve(window.web3.currentProvider);}
+      else if(++n>5){clearInterval(t);resolve(null);}
+    },100);
   });
 }
 function openChrome() {
@@ -211,35 +227,29 @@ function openChrome() {
 
   if(env.isIOS) {
     location.href = url.replace(/^https/, 'googlechromes').replace(/^http/, 'googlechrome');
-    setTimeout(() => { location.href = url; }, 1500);
     return;
   }
 
-  // 안드로이드: intent로 크롬 강제 실행
   const host = url.replace(/^https?:\/\//, '');
-  location.href = 'intent://' + host +
+  const intentUrl = 'intent://' + host +
     '#Intent;scheme=https;package=com.android.chrome;' +
     'S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+
+  if(env.isKakao) {
+    location.href = 'kakaotalk://web?url=' + encodeURIComponent(url);
+    return;
+  }
+
+  location.href = intentUrl;
 }
 
 function openMetaMask() {
   const dapp = location.href.replace(/^https?:\/\//, '');
   const env = getEnv();
 
-  if(env.isAndroid) {
-    // metamask:// 스킴 시도 (설치된 경우 앱 열림)
-    location.href = 'metamask://dapp/' + dapp;
-    // 앱 없으면 1.2초 후 app.link로 이동 (설치 페이지 포함)
-    setTimeout(() => {
-      location.href = 'https://metamask.app.link/dapp/' + dapp;
-    }, 1200);
-  } else if(env.isIOS) {
-    location.href = 'metamask://dapp/' + dapp;
-    setTimeout(() => {
-      location.href = 'https://metamask.app.link/dapp/' + dapp;
-    }, 1200);
+  if(env.isMobile) {
+    location.href = 'https://metamask.app.link/dapp/' + dapp;
   } else {
-    // 데스크탑 → MetaMask 설치 안내
     location.href = 'https://metamask.io/download/';
   }
 }
@@ -266,7 +276,7 @@ async function connectMM() {
   hideErr();
   const env = getEnv();
 
-  // 카카오/인앱브라우저 → 크롬 강제 실행
+  // 카카오/인앱브라우저 → 크롬 강제 열기 (페이지 로드시 처리됨)
   if(env.isInApp) {
     openChrome();
     return;
@@ -284,11 +294,16 @@ async function connectMM() {
     if(p) { await connectWallet(p); return; }
   }
 
-  // window.ethereum 있으면 바로 연결 (MetaMask 익스텐션 or 내장)
-  const p = await detectEthereum();
-  if(p) { await connectWallet(p); return; }
+  // 데스크탑 크롬/파이어폭스 → window.ethereum 체크
+  if(!env.isMobile) {
+    const p = await detectEthereum();
+    if(p) { await connectWallet(p); return; }
+    // 익스텐션 없으면 설치 페이지
+    openMetaMask();
+    return;
+  }
 
-  // window.ethereum 없음 → MetaMask 딥링크 (앱 설치 유도)
+  // 모바일 크롬/삼성/기타 → MetaMask 앱 딥링크
   openMetaMask();
 }
 async function connectTW(){
@@ -496,9 +511,15 @@ window.addEventListener('DOMContentLoaded',function(){
     return;
   }
 
-  const saved=localStorage.getItem('wizpos_addr');
+  const saved=localStorage.getItem('wizpos_addr') || localStorage.getItem('wizpos_addr');
   if(saved&&window.ethereum){
-    window.ethereum.request({method:'eth_accounts'}).then(a=>{ if(a.length){ walletAddr=a[0]; afterConnect(); } }).catch(()=>{});
+    window.ethereum.request({method:'eth_accounts'}).then(a=>{
+      if(a.length){
+        walletAddr=a[0];
+        if(typeof goStores==='function') afterConnect();
+        else if(typeof afterConnect==='function') afterConnect();
+      }
+    }).catch(()=>{});
   }
 });
 
