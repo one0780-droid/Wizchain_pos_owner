@@ -68,7 +68,7 @@ async function checkAndShowChain(addr, barSuffix, walletType) {
 
   try {
     const chainId = await window.ethereum.request({method:'eth_chainId'});
-    const isWizChain = chainId === '0x2803';
+    const isWizChain = chainId === '0x27F3';
     const chainEl = document.getElementById('wbChain'+barSuffix);
 
     if(isWizChain) {
