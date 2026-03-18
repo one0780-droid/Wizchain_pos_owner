@@ -205,7 +205,30 @@ function detectEthereum(){
     let n=0; const t=setInterval(()=>{ if(window.ethereum){clearInterval(t);resolve(window.ethereum);} else if(++n>5){clearInterval(t);resolve(null);} },100);
   });
 }
-function openMetaMask(){ window.location.href='https://metamask.app.link/dapp/'+location.href.replace(/^https?:\/\//,''); }
+function openChrome() {
+  const url = location.href;
+  const env = getEnv();
+  if(env.isAndroid) {
+    // 안드로이드: intent로 크롬 강제 실행
+    const intentUrl = 'intent://' + url.replace(/^https?:\/\//, '') +
+      '#Intent;scheme=https;package=com.android.chrome;end';
+    location.href = intentUrl;
+    // 크롬 미설치 시 fallback
+    setTimeout(() => { location.href = url; }, 1500);
+  } else if(env.isIOS) {
+    // iOS: googlechrome 스킴
+    const chromeUrl = url.replace(/^https/, 'googlechromes').replace(/^http/, 'googlechrome');
+    location.href = chromeUrl;
+    setTimeout(() => { location.href = url; }, 1500);
+  } else {
+    location.href = url;
+  }
+}
+
+function openMetaMask() {
+  const dapp = location.href.replace(/^https?:\/\//, '');
+  location.href = 'https://metamask.app.link/dapp/' + dapp;
+}
 
 /* == 지갑 연결 == */
 async function connectWallet(provider){
@@ -226,9 +249,24 @@ async function connectWallet(provider){
   showLoad(false);
 }
 async function connectMM(){
-  hideErr(); const env=getEnv();
-  if(env.isKakao||env.isSamsung||(env.isMobile&&!env.isMetaMask&&!env.isTrust)){ openMetaMask(); return; }
-  const p=await detectEthereum(); if(!p){ openMetaMask(); return; }
+  hideErr();
+  const env = getEnv();
+
+  // 카카오/네이버/인스타 등 인앱브라우저
+  if(env.isInApp) {
+    showKakaoGuide();
+    return;
+  }
+
+  // 모바일이지만 MetaMask/Trust 아님 → MetaMask 딥링크
+  if(env.isMobile && !env.isMetaMask && !env.isTrust) {
+    openMetaMask();
+    return;
+  }
+
+  // MetaMask 브라우저 or 데스크탑
+  const p = await detectEthereum();
+  if(!p){ openMetaMask(); return; }
   await connectWallet(p);
 }
 async function connectTW(){
@@ -451,6 +489,24 @@ function ownerLogout(){
   localStorage.removeItem('wizpos_menus');
   localStorage.removeItem('wizpos_addr');
   location.reload();
+}
+
+/* == 카카오/인앱 브라우저 안내 == */
+function showKakaoGuide() {
+  document.getElementById('kakaoGuideModal').classList.add('on');
+}
+function closeKakaoGuide() {
+  document.getElementById('kakaoGuideModal').classList.remove('on');
+}
+function openInChrome() {
+  closeKakaoGuide();
+  openChrome();
+}
+function copyLink() {
+  navigator.clipboard?.writeText(location.href).then(() => {
+    const btn = document.getElementById('copyLinkBtn');
+    if(btn){ btn.textContent='✅ 복사됨!'; setTimeout(()=>btn.textContent='🔗 링크 복사',2000); }
+  });
 }
 </script>
 
@@ -844,5 +900,31 @@ body{max-width:430px;margin:0 auto}
     <button onclick="closePartnerModal()" style="width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">확인</button>
   </div>
 </div>
+
+<!-- 카카오/인앱브라우저 안내 모달 -->
+<div class="modal-bg" id="kakaoGuideModal">
+  <div style="background:var(--surface);border-radius:20px;padding:28px 24px;width:88%;max-width:360px;text-align:center;" onclick="event.stopPropagation()">
+    <div style="font-size:40px;margin-bottom:12px;">🦊</div>
+    <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;margin-bottom:8px;">크롬에서 열어주세요</div>
+    <div style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:24px;">
+      카카오톡 내 브라우저에서는<br>
+      MetaMask 연결이 불가합니다.<br><br>
+      <strong>크롬 브라우저</strong>에서 열거나<br>
+      <strong>MetaMask 앱 내 브라우저</strong>를<br>
+      사용해주세요.
+    </div>
+    <button onclick="openInChrome()" style="width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-bottom:10px;">
+      🌐 크롬으로 열기
+    </button>
+    <button id="copyLinkBtn" onclick="copyLink()" style="width:100%;padding:12px;background:transparent;border:2px solid var(--border);border-radius:12px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-bottom:10px;">
+      🔗 링크 복사
+    </button>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">
+      복사 후 크롬 주소창에 붙여넣기
+    </div>
+    <button onclick="closeKakaoGuide()" style="width:100%;padding:10px;background:transparent;border:none;color:var(--muted);font-size:13px;cursor:pointer;">닫기</button>
+  </div>
+</div>
+
 </body>
 </html>
